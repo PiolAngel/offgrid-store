@@ -62,7 +62,6 @@ const activeVariant =
   variants.find((variant) => variant.color === color) ?? variants[0];
 
 const sizes = activeVariant?.sizes ?? getSizes(product);
-const isAccessory = product.category === "accesorios";
 const gallery = activeVariant?.gallery ?? product.gallery ?? [];
 const mainImage =
   gallery[selectedImage] ?? activeVariant?.image ?? product.image;
@@ -297,9 +296,6 @@ const mainImage =
                 </button>
               </div>
 
-              <span className="text-xs text-[#77716a]">
-                {isAccessory ? "Talle único" : "Elegí tu talle"}
-              </span>
             </div>
 
             <button
