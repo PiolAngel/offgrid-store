@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     "Descubrí OFFGRID: ropa urbana, básicos premium y sneakers seleccionados para todos los días.",
   icons: {
     icon: [
-      { url: "/favicon.ico", type: "image/x-icon" },
+      { url: "/offgrid-tab-icon-v2.ico", type: "image/x-icon" },
       { url: "/icon.png", type: "image/png", sizes: "512x512" },
     ],
     apple: [
