@@ -36,7 +36,9 @@ export default function ProductCard({ product }: ProductCardProps) {
           type="button"
           onClick={() => setIsModalOpen(true)}
           aria-label={`Ver detalles de ${product.name}`}
-          className="relative block aspect-[3/4] w-full overflow-hidden rounded-sm text-left"
+          className={`relative block w-full overflow-hidden rounded-sm text-left ${
+  product.slug === "beige-sneakers" ? "aspect-[3/5]" : "aspect-[3/4]"
+}`}
           style={{ backgroundColor }}
         >
           {product.image ? (
