@@ -17,8 +17,17 @@ const fraunces = Fraunces({
 export const metadata: Metadata = {
   metadataBase: new URL("https://offgrid-store-rho.vercel.app"),
   title: "OFFGRID — Streetwear, básicos premium y sneakers",
-  description:
+    description:
     "Descubrí OFFGRID: ropa urbana, básicos premium y sneakers seleccionados para todos los días.",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", type: "image/x-icon" },
+      { url: "/icon.png", type: "image/png", sizes: "512x512" },
+    ],
+    apple: [
+      { url: "/apple-icon.png", type: "image/png", sizes: "180x180" },
+    ],
+  },
   openGraph: {
     title: "OFFGRID — Streetwear, básicos premium y sneakers",
     description:
