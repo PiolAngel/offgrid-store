@@ -15,9 +15,32 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://offgrid-store-rho.vercel.app"),
   title: "OFFGRID — Streetwear, básicos premium y sneakers",
   description:
-    "Tienda multimarca de ropa urbana, básicos premium y sneakers para Paraguay. Catálogo de demostración.",
+    "Descubrí OFFGRID: ropa urbana, básicos premium y sneakers seleccionados para todos los días.",
+  openGraph: {
+    title: "OFFGRID — Streetwear, básicos premium y sneakers",
+    description:
+      "Ropa urbana, básicos premium y sneakers. Descubrí OFFGRID.",
+    url: "https://offgrid-store-rho.vercel.app",
+    siteName: "OFFGRID",
+    locale: "es_PY",
+    type: "website",
+    images: [
+      {
+        url: "/og-image.jpeg",
+        alt: "OFFGRID — Streetwear y básicos premium",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "OFFGRID — Streetwear, básicos premium y sneakers",
+    description:
+      "Ropa urbana, básicos premium y sneakers. Descubrí OFFGRID.",
+    images: ["/og-image.jpeg"],
+  },
 };
 
 export const viewport: Viewport = {

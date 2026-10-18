@@ -28,23 +28,28 @@ function ArrowIcon() {
 
 function HeroPlaceholder() {
   return (
-    <div aria-hidden="true" className="absolute inset-0">
-      <div className="absolute left-[10%] top-[12%] flex h-[62%] w-[50%] items-end bg-warm p-4 sm:p-6">
-        <span className="font-serif text-[clamp(4rem,10vw,8rem)] italic leading-[0.8] text-cream">
-          OG
-        </span>
+    <div aria-label="Identidad visual y colección de OFFGRID" className="absolute inset-0">
+      <div className="absolute left-[10%] top-[12%] h-[62%] w-[50%] overflow-hidden bg-warm">
+        <Image
+          src="/og-image.jpeg"
+          alt="OFFGRID, identidad visual de la marca"
+          fill
+          sizes="(min-width: 1024px) 25vw, 45vw"
+          className="object-cover"
+        />
       </div>
 
-      <div className="absolute bottom-[9%] right-[9%] flex h-[46%] w-[42%] flex-col justify-between border border-ink/20 bg-cream p-4 sm:p-5">
-        <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-ink">
-          Colección 01
-        </span>
-        <span className="text-[10px] uppercase tracking-[0.2em] text-muted">
-          Espacio para fotografía
-        </span>
+      <div className="absolute bottom-[9%] right-[9%] h-[46%] w-[42%] overflow-hidden border border-ink/20 bg-cream">
+        <Image
+          src="/collection-01.jpeg"
+          alt="Colección 01 de OFFGRID"
+          fill
+          sizes="(min-width: 1024px) 22vw, 40vw"
+          className="object-cover"
+        />
       </div>
 
-      <div className="absolute inset-4 border border-ink/15" />
+      <div className="pointer-events-none absolute inset-4 border border-ink/15" />
     </div>
   );
 }
