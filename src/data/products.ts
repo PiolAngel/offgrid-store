@@ -105,8 +105,8 @@ export const products: Product[] = [
   {
     id: "5",
     slug: "essential-tee",
-    image: "/products/remera-crema.jpg",
-    gallery: ["/products/remera-crema.jpg"],
+    image: "/products/tees/essential-tee.png",
+    gallery: ["/products/tees/essential-tee.png", "/products/tees/essential-tee-2.png"],
     name: "Essential Tee",
     category: "remeras",
     price: 189000,
@@ -117,8 +117,8 @@ export const products: Product[] = [
         color: "Crema",
         colorValue: "#E8DFD0",
         sizes: ["S", "M", "L", "XL"],
-        image: "/products/remera-crema.jpg",
-        gallery: ["/products/remera-crema.jpg"],
+        image: "/products/tees/essential-tee.png",
+        gallery: ["/products/tees/essential-tee.png", "/products/tees/essential-tee-2.png"],
       },
     ],
     tone: "light",
@@ -126,8 +126,8 @@ export const products: Product[] = [
   {
     id: "6",
     slug: "boxy-tee-black",
-    image: "/products/remera-negra.jpg",
-    gallery: ["/products/remera-negra.jpg"],
+    image: "/products/tees/boxy-tee-black.webp",
+    gallery: ["/products/tees/boxy-tee-black.webp", "/products/tees/boxy-tee-black-2.webp"],
     name: "Boxy Tee Black",
     category: "remeras",
     price: 219000,
@@ -139,8 +139,8 @@ export const products: Product[] = [
         color: "Negro",
         colorValue: "#252525",
         sizes: ["S", "M", "L", "XL"],
-        image: "/products/remera-negra.jpg",
-        gallery: ["/products/remera-negra.jpg"],
+        image: "/products/tees/boxy-tee-black.webp",
+        gallery: ["/products/tees/boxy-tee-black.webp", "/products/tees/boxy-tee-black-2.webp"],
       },
     ],
     tone: "dark",
@@ -148,6 +148,8 @@ export const products: Product[] = [
   {
     id: "7",
     slug: "heavy-tee-grey",
+    image: "/products/tees/heavy-tee-grey.webp",
+    gallery: ["/products/tees/heavy-tee-grey.webp", "/products/tees/heavy-tee-grey-2.webp"],
     name: "Heavy Tee Grey",
     category: "remeras",
     price: 229000,
@@ -159,6 +161,8 @@ export const products: Product[] = [
       {
         color: "Gris",
         colorValue: "#A5A5A2",
+        image: "/products/tees/heavy-tee-grey.webp",
+        gallery: ["/products/tees/heavy-tee-grey.webp", "/products/tees/heavy-tee-grey-2.webp"],
         sizes: ["S", "M", "L", "XL"],
       },
     ],
@@ -167,6 +171,8 @@ export const products: Product[] = [
   {
     id: "8",
     slug: "denim-straight",
+    image: "/products/denim/denim-straight.webp",
+    gallery: ["/products/denim/denim-straight.webp", "/products/denim/denim-straight-2.webp"],
     name: "Denim Straight",
     category: "pantalones",
     price: 379000,
@@ -176,6 +182,8 @@ export const products: Product[] = [
       {
         color: "Azul",
         colorValue: "#536779",
+        image: "/products/denim/denim-straight.webp",
+        gallery: ["/products/denim/denim-straight.webp", "/products/denim/denim-straight-2.webp"],
         sizes: ["28", "30", "32", "34", "36"],
       },
     ],
@@ -184,6 +192,8 @@ export const products: Product[] = [
   {
     id: "9",
     slug: "cargo-relaxed",
+    image: "/products/cargo/cargo-relaxed.jpg",
+    gallery: ["/products/cargo/cargo-relaxed.jpg", "/products/cargo/cargo-relaxed-2.jpeg"],
     name: "Cargo Relaxed",
     category: "pantalones",
     price: 429000,
@@ -193,6 +203,8 @@ export const products: Product[] = [
       {
         color: "Beige",
         colorValue: "#D8CBB7",
+        image: "/products/cargo/cargo-relaxed.jpg",
+        gallery: ["/products/cargo/cargo-relaxed.jpg", "/products/cargo/cargo-relaxed-2.jpeg"],
         sizes: ["28", "30", "32", "34", "36"],
       },
     ],
@@ -201,6 +213,8 @@ export const products: Product[] = [
   {
     id: "10",
     slug: "core-hoodie",
+    image: "/products/hoodies/core-hoodie.webp",
+    gallery: ["/products/hoodies/core-hoodie.webp", "/products/hoodies/core-hoodie-2.webp"],
     name: "Core Hoodie",
     category: "hoodies",
     price: 449000,
@@ -210,6 +224,8 @@ export const products: Product[] = [
       {
         color: "Gris",
         colorValue: "#A5A5A2",
+        image: "/products/hoodies/core-hoodie.webp",
+        gallery: ["/products/hoodies/core-hoodie.webp", "/products/hoodies/core-hoodie-2.webp"],
         sizes: ["S", "M", "L", "XL"],
       },
     ],
@@ -218,6 +234,8 @@ export const products: Product[] = [
   {
     id: "11",
     slug: "zip-hoodie-cream",
+    image: "/products/hoodies/zip-hoodie-cream.png",
+    gallery: ["/products/hoodies/zip-hoodie-cream.png", "/products/hoodies/zip-hoodie-cream-2.png"],
     name: "Zip Hoodie Cream",
     category: "hoodies",
     price: 499000,
@@ -228,6 +246,8 @@ export const products: Product[] = [
       {
         color: "Crema",
         colorValue: "#E8DFD0",
+        image: "/products/hoodies/zip-hoodie-cream.png",
+        gallery: ["/products/hoodies/zip-hoodie-cream.png", "/products/hoodies/zip-hoodie-cream-2.png"],
         sizes: ["S", "M", "L", "XL"],
       },
     ],
@@ -236,6 +256,8 @@ export const products: Product[] = [
   {
     id: "12",
     slug: "everyday-cap",
+    image: "/products/caps/everyday-cap.webp",
+    gallery: ["/products/caps/everyday-cap.webp", "/products/caps/everyday-cap-2.webp"],
     name: "Everyday Cap",
     category: "accesorios",
     price: 149000,
@@ -245,6 +267,8 @@ export const products: Product[] = [
       {
         color: "Negro",
         colorValue: "#252525",
+        image: "/products/caps/everyday-cap.webp",
+        gallery: ["/products/caps/everyday-cap.webp", "/products/caps/everyday-cap-2.webp"],
         sizes: ["Único"],
       },
     ],
