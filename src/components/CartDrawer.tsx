@@ -19,6 +19,19 @@ export default function CartDrawer() {
     removeItem,
     clearCart,
   } = useCart();
+  const FREE_SHIPPING_THRESHOLD = 500000;
+
+const remainingForFreeShipping = Math.max(
+  0,
+  FREE_SHIPPING_THRESHOLD - subtotal
+);
+
+const shippingProgress = Math.min(
+  100,
+  (subtotal / FREE_SHIPPING_THRESHOLD) * 100
+);
+
+const hasFreeShipping = subtotal >= FREE_SHIPPING_THRESHOLD;
 
   useEffect(() => {
     if (!isCartOpen) return;
@@ -215,6 +228,61 @@ export default function CartDrawer() {
             </div>
 
             <footer className="border-t border-[#ded6ca] bg-[#f5f1e9] px-6 pb-6 pt-5">
+
+
+<div
+  className="mb-4 rounded-sm border border-[#ded6ca] bg-[#eee9df] px-3 py-3"
+  aria-live="polite"
+>
+  <div className="flex items-center justify-between gap-3">
+    <p className="text-sm font-semibold tracking-tight text-[#211f1c]">
+      {hasFreeShipping
+        ? "¡Conseguiste delivery gratis!"
+        : "Conseguí delivery gratis"}
+    </p>
+
+    <span className="shrink-0 text-xs font-semibold text-[#211f1c]">
+      {Math.round(shippingProgress)}%
+    </span>
+  </div>
+
+  <div
+    className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#d8d0c4]"
+    role="progressbar"
+    aria-label="Progreso para conseguir delivery gratis"
+    aria-valuemin={0}
+    aria-valuemax={FREE_SHIPPING_THRESHOLD}
+    aria-valuenow={Math.min(subtotal, FREE_SHIPPING_THRESHOLD)}
+  >
+    <div
+      className="h-full rounded-full bg-[#292824] transition-[width] duration-300"
+      style={{ width: `${shippingProgress}%` }}
+    />
+  </div>
+
+  <p className="mt-2 text-xs font-medium text-[#37342f]">
+    {hasFreeShipping
+      ? "Tu pedido ya tiene envío gratis."
+      : `Te faltan ${formatPrice(remainingForFreeShipping)}`}
+  </p>
+</div>
+
+
+  <div
+    className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#d8d0c4]"
+    role="progressbar"
+    aria-label="Progreso para conseguir delivery gratis"
+    aria-valuemin={0}
+    aria-valuemax={FREE_SHIPPING_THRESHOLD}
+    aria-valuenow={Math.min(subtotal, FREE_SHIPPING_THRESHOLD)}
+  >
+    <div
+      className="h-full rounded-full bg-[#292824] transition-[width] duration-300"
+      style={{ width: `${shippingProgress}%` }}
+    />
+  </div>
+
+
               <div className="flex items-center justify-between">
                 <span className="text-sm">Subtotal</span>
                 <span className="text-lg font-medium">
@@ -222,10 +290,12 @@ export default function CartDrawer() {
                 </span>
               </div>
 
-              <p className="mt-2 text-xs leading-5 text-[#77716a]">
-                El costo de envío se calculará más adelante. El checkout
-                todavía no está conectado.
-              </p>
+              <div className="mt-2 flex items-center justify-between text-sm">
+  <span className="text-[#77716a]">Delivery</span>
+  <span className="font-medium">
+    {hasFreeShipping ? "GRATIS" : formatPrice(15000)}
+  </span>
+</div>
 
               <button
                 type="button"

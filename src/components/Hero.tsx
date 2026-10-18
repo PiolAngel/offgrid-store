@@ -29,23 +29,24 @@ function ArrowIcon() {
 function HeroPlaceholder() {
   return (
     <div aria-label="Identidad visual y colección de OFFGRID" className="absolute inset-0">
-      <div className="absolute left-[10%] top-[12%] h-[62%] w-[50%] overflow-hidden bg-warm">
+      <div className="absolute left-[10%] top-[12%] aspect-square w-[52%] overflow-hidden bg-warm">
         <Image
-          src="/og-image.jpeg"
-          alt="OFFGRID, identidad visual de la marca"
-          fill
-          sizes="(min-width: 1024px) 25vw, 45vw"
-          className="object-cover"
-        />
+  src="/og-image.jpeg"
+  alt="OFFGRID, identidad visual de la marca"
+  fill
+  loading="eager"
+  sizes="(min-width: 1024px) 25vw, 45vw"
+  className="object-contain"
+/>
       </div>
 
-      <div className="absolute bottom-[9%] right-[9%] h-[46%] w-[42%] overflow-hidden border border-ink/20 bg-cream">
+      <div className="absolute bottom-[9%] right-[9%] aspect-square w-[42%] overflow-hidden border border-ink/20 bg-cream">
         <Image
           src="/collection-01.jpeg"
           alt="Colección 01 de OFFGRID"
           fill
           sizes="(min-width: 1024px) 22vw, 40vw"
-          className="object-cover"
+          className="object-contain"
         />
       </div>
 
