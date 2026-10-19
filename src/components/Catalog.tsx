@@ -1,8 +1,10 @@
 
 "use client";
 
+import { useEffect } from "react";
 import ProductCard from "@/components/ProductCard";
 import { useProductFilter } from "@/hooks/useProductFilter";
+import { CATEGORY_SELECT_EVENT } from "@/lib/category-events";
 
 export default function Catalog() {
   const {
@@ -17,6 +19,18 @@ export default function Catalog() {
     resetFilters,
   } = useProductFilter();
 
+  // Escucha los clics de la sección Categorías y aplica el filtro elegido.
+  useEffect(() => {
+    function handleSelect(event: Event) {
+      const id = (event as CustomEvent<string>).detail;
+      if (categories.some((item) => item.id === id)) {
+        setCategory(id as typeof category);
+      }
+    }
+
+    window.addEventListener(CATEGORY_SELECT_EVENT, handleSelect);
+    return () => window.removeEventListener(CATEGORY_SELECT_EVENT, handleSelect);
+  }, [categories, setCategory]);
   return (
     <section
       id="catalogo"
