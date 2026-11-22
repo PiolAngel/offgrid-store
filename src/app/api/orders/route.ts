@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { configured, db } from "@/lib/server/db";
+import { configured, db, DatabaseError } from "@/lib/server/db";
 
 export async function POST(request: Request) {
   if (!configured()) return NextResponse.json({ error: "La tienda aún no está habilitada para pedidos reales" }, { status: 503 });
@@ -18,6 +18,8 @@ export async function POST(request: Request) {
         typeof item.color === "string" && item.color.length < 100 && typeof item.size === "string" && item.size.length < 50 &&
         Number.isInteger(item.quantity) && item.quantity >= 1 && item.quantity <= 10) ||
       typeof input.requestId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(input.requestId) ||
+      !Number.isSafeInteger(input.expectedSubtotal) || input.expectedSubtotal < 0 ||
+      !Number.isSafeInteger(input.expectedDeliveryCost) || input.expectedDeliveryCost < 0 ||
       !["delivery", "pickup"].includes(input.deliveryMethod) ||
       !["transfer", "cash"].includes(input.paymentMethod)
     ) return NextResponse.json({ error: "Verificá los datos del pedido" }, { status: 400 });
@@ -25,6 +27,7 @@ export async function POST(request: Request) {
       "rpc/place_order", { method: "POST", body: JSON.stringify({ payload: {
         requestId: input.requestId, customer, items: items.map(({ productId, color, size, quantity }: any) => ({ productId, color, size, quantity })),
         deliveryMethod: input.deliveryMethod, paymentMethod: input.paymentMethod,
+        expectedSubtotal: input.expectedSubtotal, expectedDeliveryCost: input.expectedDeliveryCost,
       } }) },
     );
     const row = orders?.[0];
@@ -34,7 +37,10 @@ export async function POST(request: Request) {
       subtotal: Number(row.subtotal), deliveryCost: Number(row.delivery_cost), total: Number(row.total),
       deliveryMethod: row.delivery_method, paymentMethod: row.payment_method, status: row.status, paymentStatus: row.payment_status,
     } }, { status: 201 });
-  } catch {
-    return NextResponse.json({ error: "No se pudo registrar el pedido. Revisá el stock e intentá nuevamente." }, { status: 409 });
+  } catch (error) {
+    if (error instanceof DatabaseError && error.status >= 500) {
+      return NextResponse.json({ error: "El servidor de pedidos no está disponible. Probá nuevamente más tarde." }, { status: 503 });
+    }
+    return NextResponse.json({ error: "El stock o precio cambió. Revisá tu carrito e intentá nuevamente." }, { status: 409 });
   }
 }
