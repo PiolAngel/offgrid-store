@@ -10,6 +10,8 @@ import {
   type ReactNode,
 } from "react";
 import type { CartItem, Product } from "@/types";
+import { useEffect } from "react";
+import { readJSON, writeJSON } from "@/lib/storage";
 
 export const MAX_QUANTITY = 10;
 
@@ -61,10 +63,25 @@ const CartContext = createContext<CartContextValue | undefined>(undefined);
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
 
   // Copia síncrona del carrito. Permite comprobar el stock con los datos más recientes,
   // incluso cuando se llama a addItem varias veces seguidas (por ejemplo, cantidad 3 desde el modal).
   const itemsRef = useRef<CartItem[]>([]);
+
+  useEffect(() => {
+    const saved = readJSON<CartItem[]>("offgrid:cart:v1");
+    if (Array.isArray(saved)) {
+      const safe = saved.filter((item) => item && item.product && typeof item.id === "string" && Number.isInteger(item.quantity) && item.quantity > 0).slice(0, 50);
+      itemsRef.current = safe;
+      setItems(safe);
+    }
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (hydrated) writeJSON("offgrid:cart:v1", items);
+  }, [hydrated, items]);
 
   const commitItems = useCallback((nextItems: CartItem[]) => {
     itemsRef.current = nextItems;
