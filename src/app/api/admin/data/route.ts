@@ -24,6 +24,17 @@ export async function GET(request: Request) {
   }
 }
 
+async function patchExactlyOne(path: string, patch: Record<string, unknown>): Promise<void> {
+  const rows = await db<Record<string, unknown>[]>(path, {
+    method: "PATCH",
+    headers: { Prefer: "return=representation" },
+    body: JSON.stringify(patch),
+  });
+  if (!Array.isArray(rows) || rows.length !== 1) {
+    throw new Error("El registro no existe o no pudo actualizarse");
+  }
+}
+
 export async function PATCH(request: Request) {
   if (!(await permitted(request))) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   if (!configured()) return NextResponse.json({ error: "Base de datos no configurada" }, { status: 503 });
@@ -35,17 +46,17 @@ export async function PATCH(request: Request) {
       await db("rpc/set_order_status", { method: "POST", body: JSON.stringify({ order_uuid: input.id, new_status: input.value }) });
     } else if (input.kind === "order" && input.field === "payment_status" &&
       ["pending", "paid", "failed"].includes(input.value)) {
-      await db(`orders?id=eq.${encodeURIComponent(input.id)}`, { method: "PATCH", body: JSON.stringify({ payment_status: input.value }) });
+      await patchExactlyOne(`orders?id=eq.${encodeURIComponent(input.id)}`, { payment_status: input.value });
     } else if (input.kind === "product" && input.field === "price" &&
       Number.isSafeInteger(input.value) && input.value >= 0 && input.value <= 100000000) {
-      await db(`catalog?id=eq.${encodeURIComponent(input.id)}`, { method: "PATCH", body: JSON.stringify({ price: input.value }) });
+      await patchExactlyOne(`catalog?id=eq.${encodeURIComponent(input.id)}`, { price: input.value });
     } else if (input.kind === "product" && input.field === "active" && typeof input.value === "boolean") {
-      await db(`catalog?id=eq.${encodeURIComponent(input.id)}`, { method: "PATCH", body: JSON.stringify({ active: input.value }) });
+      await patchExactlyOne(`catalog?id=eq.${encodeURIComponent(input.id)}`, { active: input.value });
     } else if (input.kind === "stock" && typeof input.color === "string" && typeof input.size === "string" &&
       input.color.length <= 100 && input.size.length <= 50 &&
       Number.isSafeInteger(input.value) && input.value >= 0 && input.value <= 1000000) {
       const filter = `inventory?product_id=eq.${encodeURIComponent(input.id)}&color=eq.${encodeURIComponent(input.color)}&size=eq.${encodeURIComponent(input.size)}`;
-      await db(filter, { method: "PATCH", body: JSON.stringify({ quantity: input.value }) });
+      await patchExactlyOne(filter, { quantity: input.value });
     } else throw Error("invalid");
     return NextResponse.json({ ok: true });
   } catch {
