@@ -35,7 +35,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => { void refresh(); }, [refresh]);
 
-  const createOrder = useCallback(async (order: Omit<Order, "id" | "code" | "createdAt">): Promise<Order> => {
+  const createOrder = useCallback(async (order: Omit<Order, "id" | "code" | "createdAt"> & { requestId: string }): Promise<Order> => {
     const response = await fetch("/api/orders", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
