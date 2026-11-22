@@ -36,6 +36,13 @@ begin
   if stock_after<>initial_stock-1 then raise exception 'Error: stock no descontado'; end if;
   select * into retry from public.place_order(order_payload);
   if retry.id<>row_order.id then raise exception 'Error: pedido duplicado'; end if;
+  begin
+    perform public.place_order(jsonb_set(order_payload,'{expectedSubtotal}','-1'::jsonb));
+    raise exception 'Error: se reutilizó UUID con cotización distinta';
+  exception when raise_exception then
+    if sqlerrm='Error: se reutilizó UUID con cotización distinta' then raise; end if;
+  end;
+
   perform public.set_order_status(row_order.id,'cancelled');
   select quantity into stock_after from public.inventory where product_id=product and color=color_name and size=size_name;
   if stock_after<>initial_stock then raise exception 'Error: cancelación no repuso stock'; end if;
