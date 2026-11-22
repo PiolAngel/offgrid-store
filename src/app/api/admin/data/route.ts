@@ -14,9 +14,9 @@ export async function GET(request: Request) {
   if (!configured()) return NextResponse.json({ error: "Configurá Supabase primero" }, { status: 503 });
   try {
     const [orders, catalog, inventory] = await Promise.all([
-      db<any[]>("orders?select=*&order=created_at.desc&limit=200"),
-      db<any[]>("catalog?select=id,data,price,active&order=id"),
-      db<any[]>("inventory?select=product_id,color,size,quantity&order=product_id"),
+      db<Record<string, unknown>[]>("orders?select=*&order=created_at.desc&limit=200"),
+      db<Record<string, unknown>[]>("catalog?select=id,data,price,active&order=id"),
+      db<Record<string, unknown>[]>("inventory?select=product_id,color,size,quantity&order=product_id"),
     ]);
     return NextResponse.json({ orders, catalog, inventory }, { headers: { "Cache-Control": "no-store" } });
   } catch {
