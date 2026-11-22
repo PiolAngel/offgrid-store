@@ -218,10 +218,19 @@ export default function CheckoutFlow() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
+    let mounted = true;
     const stored = readJSON<unknown>(DRAFT_KEY);
     const parsed = stored ? parseDraft(stored) : INITIAL_DRAFT;
-    setDraft({ ...parsed, requestId: /^[0-9a-f-]{36}$/i.test(parsed.requestId) ? parsed.requestId : crypto.randomUUID() });
-    setDraftReady(true);
+    const restored = {
+      ...parsed,
+      requestId: /^[0-9a-f-]{36}$/i.test(parsed.requestId) ? parsed.requestId : crypto.randomUUID(),
+    };
+    queueMicrotask(() => {
+      if (!mounted) return;
+      setDraft(restored);
+      setDraftReady(true);
+    });
+    return () => { mounted = false; };
   }, []);
 
   useEffect(() => {
