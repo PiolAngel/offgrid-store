@@ -63,7 +63,8 @@ begin
     or jsonb_typeof(customer_data) <> 'object'
     or length(trim(coalesce(customer_data->>'name',''))) not between 3 and 120
     or (customer_data->>'phone') !~ '^5959[0-9]{8}$'
-    or length(trim(coalesce(customer_data->>'address',''))) not between 5 and 500
+    or (payload->>'deliveryMethod' = 'delivery' and length(trim(coalesce(customer_data->>'address',''))) not between 5 and 500)
+    or length(coalesce(customer_data->>'address','')) > 500
     or length(coalesce(customer_data->>'notes','')) > 500
     or payload->>'deliveryMethod' not in ('delivery','pickup')
     or payload->>'paymentMethod' not in ('transfer','cash')
