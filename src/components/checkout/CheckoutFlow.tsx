@@ -73,7 +73,7 @@ function validateCustomer(draft: Draft) {
     errors.phone = "Ingresá un número paraguayo válido.";
   }
 
-  if (draft.address.trim().length < 5) {
+  if (draft.deliveryMethod === "delivery" && draft.address.trim().length < 5) {
     errors.address = "Ingresá tu dirección o una referencia.";
   }
 
@@ -239,7 +239,12 @@ export default function CheckoutFlow() {
   }
 
   function goNext() {
-    if (draft.step === 1 && Object.keys(errors).length > 0) {
+    if (draft.step === 1 && (errors.name || errors.phone)) {
+      setShowErrors(true);
+      return;
+    }
+
+    if (draft.step === 2 && errors.address) {
       setShowErrors(true);
       return;
     }
@@ -262,7 +267,7 @@ export default function CheckoutFlow() {
   async function confirmOrder() {
     if (!draft.paymentMethod || submitting || items.length === 0 || !catalogReady) return;
     if (Object.keys(validateCustomer(draft)).length) {
-      update("step", 1);
+      update("step", errors.address && !errors.name && !errors.phone ? 2 : 1);
       setShowErrors(true);
       return;
     }
@@ -329,7 +334,7 @@ export default function CheckoutFlow() {
       "",
       `Cliente: ${order.customer.name}`,
       `Teléfono: +${order.customer.phone}`,
-      `Dirección: ${order.customer.address}`,
+      `Dirección: ${order.customer.address || "Retiro a coordinar"}`,
       `Entrega: ${DELIVERY_METHOD_LABELS[order.deliveryMethod]}`,
       `Pago: ${PAYMENT_METHOD_LABELS[order.paymentMethod]}`,
       "",
@@ -464,13 +469,6 @@ export default function CheckoutFlow() {
                   error={showErrors ? errors.phone : undefined}
                 />
                 <Field
-                  label="DIRECCIÓN"
-                  value={draft.address}
-                  onChange={(value) => update("address", value)}
-                  placeholder="Calle, número, barrio, ciudad"
-                  error={showErrors ? errors.address : undefined}
-                />
-                <Field
                   label="REFERENCIAS (OPCIONAL)"
                   value={draft.notes}
                   onChange={(value) => update("notes", value)}
@@ -502,6 +500,17 @@ export default function CheckoutFlow() {
                   onClick={() => update("deliveryMethod", "pickup")}
                 />
               </div>
+              {draft.deliveryMethod === "delivery" && (
+                <div className="mt-5">
+                  <Field
+                    label="DIRECCIÓN DE ENTREGA"
+                    value={draft.address}
+                    onChange={(value) => update("address", value)}
+                    placeholder="Calle, número, barrio, ciudad"
+                    error={showErrors ? errors.address : undefined}
+                  />
+                </div>
+              )}
               {freeShipping && (
                 <p className="mt-4 text-xs text-[#5e5a52]">
                   ¡Tu compra alcanza el envío gratis!
@@ -549,7 +558,7 @@ export default function CheckoutFlow() {
                   <p className="text-[10px] tracking-widest text-[#77716a]">CLIENTE</p>
                   <p className="mt-2">{draft.name}</p>
                   <p>{draft.phone}</p>
-                  <p>{draft.address}</p>
+                  {draft.deliveryMethod === "delivery" && <p>{draft.address}</p>}
                   {draft.notes && <p>{draft.notes}</p>}
                   <button onClick={() => update("step", 1)} className="mt-3 text-xs underline">Editar</button>
                 </div>
