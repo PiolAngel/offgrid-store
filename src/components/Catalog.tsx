@@ -8,6 +8,7 @@ import { CATEGORY_SELECT_EVENT } from "@/lib/category-events";
 import { useStore } from "@/context/StoreContext";
 
 export default function Catalog() {
+  const { products, isProductActive } = useStore();
   const {
     query,
     setQuery,
@@ -18,8 +19,7 @@ export default function Catalog() {
     categories,
     filteredProducts: allFilteredProducts,
     resetFilters,
-  } = useProductFilter();
-const { isProductActive } = useStore();
+  } = useProductFilter(products);
 
 const filteredProducts = allFilteredProducts.filter((product) =>
   isProductActive(product.id),
