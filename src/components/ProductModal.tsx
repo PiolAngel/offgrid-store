@@ -41,7 +41,7 @@ function getSizeStock(
 ): number | undefined {
   const value = variant?.stock?.[sizeOption];
 
-  if (typeof value !== "number" || !Number.isFinite(value)) return undefined;
+  if (typeof value !== "number" || !Number.isFinite(value)) return 0;
 
   return Math.max(0, Math.floor(value));
 }
@@ -117,7 +117,7 @@ function ProductModalContent({
   // Sin stock definido se conserva el comportamiento anterior (tope: MAX_QUANTITY).
   const availableUnits =
     selectedStock === undefined
-      ? MAX_QUANTITY
+      ? 0
       : Math.max(0, selectedStock - unitsInCart);
 
   const maxQuantity = Math.max(1, Math.min(MAX_QUANTITY, availableUnits));
@@ -209,11 +209,13 @@ function ProductModalContent({
     if (!product || !selectedVariant || !size || addDisabled) return;
     if (!sizes.includes(size) || isSizeSoldOut(selectedVariant, size)) return;
 
+    let added = 0;
     for (let i = 0; i < safeQuantity; i++) {
-      addItem(product, size, selectedVariant.color);
+      if (addItem(product, size, selectedVariant.color)) added++;
+      else break;
     }
 
-    onClose();
+    if (added > 0) onClose();
   }
 
   return (
