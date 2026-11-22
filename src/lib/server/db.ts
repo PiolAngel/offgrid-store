@@ -1,7 +1,7 @@
 import "server-only";
 
 const endpoint = process.env.SUPABASE_URL?.replace(/\/$/, "");
-const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const key = process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 export function configured() {
   return Boolean(endpoint && key);
@@ -13,7 +13,7 @@ export async function db<T>(path: string, options: RequestInit = {}): Promise<T>
     ...options,
     headers: {
       apikey: key,
-      Authorization: `Bearer ${key}`,
+      ...(key?.startsWith("eyJ") ? { Authorization: `Bearer ${key}` } : {}),
       "Content-Type": "application/json",
       ...(options.headers ?? {}),
     },
