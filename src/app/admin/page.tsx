@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { formatPrice } from "@/lib/pricing";
+import { ORDER_STATUS_LABELS, PAYMENT_STATUS_LABELS, PAYMENT_METHOD_LABELS } from "@/lib/order-labels";
 
 type RecordRow = Record<string, any>;
 
@@ -96,7 +97,7 @@ export default function AdminPage() {
         {error && <p role="alert" className="border border-red-300 bg-red-50 p-4 text-sm text-red-800">{error}</p>}
         {notice && <p role="status" className="border border-stone-300 bg-white p-4 text-sm">{notice}</p>}
         {data && <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          <div className="border border-stone-300 p-4"><p className="text-xs">PEDIDOS</p><p className="mt-2 text-3xl">{data.orders.length}</p></div>
+          <div className="border border-stone-300 p-4"><p className="text-xs">PEDIDOS RECIENTES</p><p className="mt-2 text-3xl">{data.orders.length}</p></div>
           <div className="border border-stone-300 p-4"><p className="text-xs">PRODUCTOS</p><p className="mt-2 text-3xl">{data.catalog.length}</p></div>
           <div className="border border-stone-300 p-4"><p className="text-xs">STOCK TOTAL</p><p className="mt-2 text-3xl">{data.inventory.reduce((a, x) => a + x.quantity, 0)}</p></div>
         </div>}
@@ -112,18 +113,18 @@ export default function AdminPage() {
           {data?.orders.length === 0 && <p>Sin pedidos todavía.</p>}
           {data?.orders.map((order) => <article key={order.id} className="space-y-3 border border-stone-300 p-5">
             <div className="flex flex-wrap justify-between gap-2"><strong>{order.code}</strong><span className="text-sm">{new Date(order.created_at).toLocaleString("es-PY")}</span></div>
-            <p className="text-sm">{order.customer.name} · +{order.customer.phone} · {order.customer.address}</p>
+            <p className="text-sm">{order.customer.name} · +{order.customer.phone} · {order.customer.address || "Retiro a coordinar"}</p>
             <p className="text-sm">{order.items.map((item: any) => `${item.name} (${item.color}/${item.size}) ×${item.quantity}`).join("; ")}</p>
-            <p className="font-semibold">{formatPrice(Number(order.total))} · {order.payment_method}</p>
+            <p className="font-semibold">{formatPrice(Number(order.total))} · {PAYMENT_METHOD_LABELS[order.payment_method as keyof typeof PAYMENT_METHOD_LABELS] ?? order.payment_method}</p>
             <div className="flex flex-wrap gap-3">
               <label className="text-xs">Estado
                 <select disabled={busy} className={input + " ml-2"} value={order.status} onChange={(e) => void update("order", order.id, "status", e.target.value)}>
-                  {["pending","confirmed","preparing","shipped","delivered","cancelled"].map((s) => <option key={s} value={s}>{s}</option>)}
+                  {(order.status === "cancelled" ? ["cancelled"] : order.status === "delivered" ? ["delivered"] : order.status === "shipped" ? ["shipped","delivered"] : ["pending","confirmed","preparing","shipped","delivered","cancelled"]).map((s) => <option key={s} value={s}>{ORDER_STATUS_LABELS[s as keyof typeof ORDER_STATUS_LABELS]}</option>)}
                 </select>
               </label>
               <label className="text-xs">Pago
                 <select disabled={busy} className={input + " ml-2"} value={order.payment_status} onChange={(e) => void update("order", order.id, "payment_status", e.target.value)}>
-                  {["pending","paid","failed"].map((s) => <option key={s} value={s}>{s}</option>)}
+                  {["pending","paid","failed"].map((s) => <option key={s} value={s}>{PAYMENT_STATUS_LABELS[s as keyof typeof PAYMENT_STATUS_LABELS]}</option>)}
                 </select>
               </label>
               <a className={btn} target="_blank" rel="noopener noreferrer" href={`https://wa.me/${order.customer.phone}?text=${encodeURIComponent(`Hola ${order.customer.name}, te escribimos de OFFGRID por tu pedido ${order.code}.`)}`}>Contactar cliente</a>
