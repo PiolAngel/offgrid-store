@@ -2,8 +2,6 @@ import { NextResponse } from "next/server";
 import { isAdmin } from "@/lib/server/admin-auth";
 import { configured, db } from "@/lib/server/db";
 
-export const dynamic = "force-dynamic";
-
 async function permitted(request: Request): Promise<boolean> {
   if (!(await isAdmin())) return false;
   if (request.method === "GET") return true;
