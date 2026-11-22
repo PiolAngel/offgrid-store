@@ -212,6 +212,7 @@ export default function CheckoutFlow() {
   const [showErrors, setShowErrors] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [order, setOrder] = useState<Order | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     const stored = readJSON<unknown>(DRAFT_KEY);
@@ -254,8 +255,13 @@ export default function CheckoutFlow() {
     update("step", (draft.step - 1) as Step);
   }
 
-  function confirmOrder() {
-    if (!draft.paymentMethod) return;
+  async function confirmOrder() {
+    if (!draft.paymentMethod || submitting || items.length === 0) return;
+    if (Object.keys(validateCustomer(draft)).length) {
+      update("step", 1);
+      setShowErrors(true);
+      return;
+    }
 
     const phone = normalizePhone(draft.phone);
 
@@ -265,7 +271,10 @@ export default function CheckoutFlow() {
       return;
     }
 
-    const result = createOrder({
+    setSubmitting(true);
+    setSubmitError("");
+    try {
+    const result = await createOrder({
       customer: {
         name: draft.name.trim(),
         phone,
@@ -290,15 +299,15 @@ export default function CheckoutFlow() {
       status: "pending",
     });
 
-    if (!result) {
-      setSubmitError("No se pudo registrar el pedido. Intentá nuevamente.");
-      return;
-    }
-
     removeKey(DRAFT_KEY);
     clearCart();
     setOrder(result);
     window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : "No se pudo registrar el pedido.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   if (!draftReady) {
@@ -344,8 +353,7 @@ export default function CheckoutFlow() {
           </p>
 
           <p className="mt-5 bg-[#eee9df] px-4 py-3 text-xs leading-relaxed text-[#5e5a52]">
-            Esta es una tienda de demostración. No se realizó ningún cobro.
-            El pedido quedó guardado en este navegador.
+            Tu pedido fue registrado. Para coordinar la entrega y el pago, enviá el mensaje por WhatsApp. No se realizó ningún cobro online.
           </p>
 
           <div className="mt-6 space-y-2 text-sm">
@@ -484,7 +492,7 @@ export default function CheckoutFlow() {
                 <OptionCard
                   selected={draft.deliveryMethod === "pickup"}
                   title="Retiro en local"
-                  description="Punto de entrega OFFGRID (ubicación de demostración)."
+                  description="Coordinaremos el punto de retiro por WhatsApp."
                   price="GRATIS"
                   onClick={() => update("deliveryMethod", "pickup")}
                 />
@@ -501,19 +509,19 @@ export default function CheckoutFlow() {
             <div>
               <h1 className="font-serif text-3xl sm:text-4xl">Método de pago</h1>
               <p className="mt-3 bg-[#eee9df] px-4 py-3 text-xs leading-relaxed text-[#5e5a52]">
-                Pagos simulados: no se procesa ningún cobro ni se solicitan datos bancarios reales.
+                No se cobra online. Coordinaremos el pago por WhatsApp al confirmar tu pedido.
               </p>
               <div className="mt-6 space-y-3">
                 <OptionCard
                   selected={draft.paymentMethod === "transfer"}
                   title="Transferencia"
-                  description="Datos bancarios de demostración. No transfieras dinero real."
+                  description="Coordinaremos los datos bancarios por WhatsApp antes del pago."
                   onClick={() => update("paymentMethod", "transfer")}
                 />
                 <OptionCard
                   selected={draft.paymentMethod === "cash"}
                   title="Efectivo"
-                  description="Pago en efectivo al recibir el pedido (simulado)."
+                  description="Pago en efectivo al recibir el pedido."
                   onClick={() => update("paymentMethod", "cash")}
                 />
               </div>
