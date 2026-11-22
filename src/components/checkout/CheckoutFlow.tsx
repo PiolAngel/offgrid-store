@@ -208,7 +208,7 @@ function Totals({
 
 export default function CheckoutFlow() {
   const { items, subtotal, clearCart, openCart } = useCart();
-  const { createOrder } = useStore();
+  const { createOrder, catalogReady, catalogError, refresh } = useStore();
 
   const [draft, setDraft] = useState<Draft>(INITIAL_DRAFT);
   const [draftReady, setDraftReady] = useState(false);
@@ -260,7 +260,7 @@ export default function CheckoutFlow() {
   }
 
   async function confirmOrder() {
-    if (!draft.paymentMethod || submitting || items.length === 0) return;
+    if (!draft.paymentMethod || submitting || items.length === 0 || !catalogReady) return;
     if (Object.keys(validateCustomer(draft)).length) {
       update("step", 1);
       setShowErrors(true);
@@ -564,6 +564,12 @@ export default function CheckoutFlow() {
                   <button onClick={() => update("step", 3)} className="mt-3 text-xs underline">Editar</button>
                 </div>
               </div>
+              {!catalogReady && (
+                <div role="status" className="mt-5 text-sm text-[#77716a]">
+                  {catalogError ? "El inventario no está disponible. No confirmaremos pedidos sin verificar el stock." : "Comprobando disponibilidad y precios..."}
+                  {catalogError && <button type="button" className="ml-2 underline" onClick={() => void refresh()}>Reintentar</button>}
+                </div>
+              )}
               {submitError && (
                 <div role="alert" className="mt-5 text-sm text-red-700">
                   {submitError}
@@ -603,9 +609,10 @@ export default function CheckoutFlow() {
               <button
                 type="button"
                 onClick={confirmOrder}
-                className="min-h-14 bg-[#211f1c] px-9 text-xs tracking-widest text-[#f5f1e9]"
+                disabled={submitting || !catalogReady}
+                className="min-h-14 bg-[#211f1c] px-9 text-xs tracking-widest text-[#f5f1e9] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                CONFIRMAR PEDIDO · {formatPrice(total)}
+                {submitting ? "REGISTRANDO PEDIDO..." : !catalogReady ? "VERIFICANDO DISPONIBILIDAD..." : `CONFIRMAR PEDIDO · ${formatPrice(total)}`}
               </button>
             )}
           </div>
