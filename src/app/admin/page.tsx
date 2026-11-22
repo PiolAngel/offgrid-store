@@ -4,12 +4,41 @@ import { useCallback, useEffect, useState } from "react";
 import { formatPrice } from "@/lib/pricing";
 import { ORDER_STATUS_LABELS, PAYMENT_STATUS_LABELS, PAYMENT_METHOD_LABELS } from "@/lib/order-labels";
 
-type RecordRow = Record<string, any>;
+import type { OrderStatus, PaymentStatus, PaymentMethod } from "@/types";
+
+interface AdminOrder {
+  id: string;
+  code: string;
+  created_at: string;
+  customer: { name: string; phone: string; address?: string };
+  items: Array<{ name: string; color: string; size: string; quantity: number }>;
+  total: number;
+  payment_method: PaymentMethod;
+  status: OrderStatus;
+  payment_status: PaymentStatus;
+}
+interface AdminProduct {
+  id: string;
+  data: { name: string };
+  price: number;
+  active: boolean;
+}
+interface AdminStock {
+  product_id: string;
+  color: string;
+  size: string;
+  quantity: number;
+}
+interface AdminData {
+  orders: AdminOrder[];
+  catalog: AdminProduct[];
+  inventory: AdminStock[];
+}
 
 export default function AdminPage() {
   const [loggedIn, setLoggedIn] = useState(false);
   const [password, setPassword] = useState("");
-  const [data, setData] = useState<{ catalog: RecordRow[]; inventory: RecordRow[]; orders: RecordRow[] } | null>(null);
+  const [data, setData] = useState<AdminData | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
@@ -114,7 +143,7 @@ export default function AdminPage() {
           {data?.orders.map((order) => <article key={order.id} className="space-y-3 border border-stone-300 p-5">
             <div className="flex flex-wrap justify-between gap-2"><strong>{order.code}</strong><span className="text-sm">{new Date(order.created_at).toLocaleString("es-PY")}</span></div>
             <p className="text-sm">{order.customer.name} · +{order.customer.phone} · {order.customer.address || "Retiro a coordinar"}</p>
-            <p className="text-sm">{order.items.map((item: any) => `${item.name} (${item.color}/${item.size}) ×${item.quantity}`).join("; ")}</p>
+            <p className="text-sm">{order.items.map((item) => `${item.name} (${item.color}/${item.size}) ×${item.quantity}`).join("; ")}</p>
             <p className="font-semibold">{formatPrice(Number(order.total))} · {PAYMENT_METHOD_LABELS[order.payment_method as keyof typeof PAYMENT_METHOD_LABELS] ?? order.payment_method}</p>
             <div className="flex flex-wrap gap-3">
               <label className="text-xs">Estado
