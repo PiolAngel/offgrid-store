@@ -76,7 +76,8 @@ export default function AdminPage() {
       if (!res.ok) throw new Error(response.error || "No se pudo guardar");
       await load();
       // Notificar la página de tienda abierta en otra pestaña (mismo origen).
-      window.localStorage.setItem("offgrid:catalog:refresh", String(Date.now()));
+      const previousChange = Number(window.localStorage.getItem("offgrid:catalog:refresh") ?? "0");
+      window.localStorage.setItem("offgrid:catalog:refresh", String((Number.isFinite(previousChange) ? previousChange : 0) + 1));
       window.dispatchEvent(new Event("offgrid:catalog-changed"));
       setNotice("Cambio guardado. El catálogo de esta versión de pruebas se actualiza automáticamente.");
     } catch (err) { setError(err instanceof Error ? err.message : "Error"); }
