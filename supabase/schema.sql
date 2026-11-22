@@ -127,3 +127,39 @@ end;
 $$;
 revoke all on function public.place_order(jsonb) from public, anon, authenticated;
 grant execute on function public.place_order(jsonb) to service_role;
+
+-- Inicialización atómica del catálogo: evita un estado intermedio sin inventario.
+create or replace function public.bootstrap_catalog(payload jsonb)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  catalog_count int;
+  variant_count int;
+begin
+  perform pg_advisory_xact_lock(59172026);
+  if exists (select 1 from public.catalog limit 1) then
+    raise exception 'Catalog already initialized';
+  end if;
+  if jsonb_typeof(payload->'catalog') <> 'array'
+    or jsonb_array_length(payload->'catalog') = 0
+    or jsonb_typeof(payload->'inventory') <> 'array'
+  then raise exception 'Invalid seed data'; end if;
+
+  insert into public.catalog (id, data, price, active)
+  select id, data, price, active
+  from jsonb_to_recordset(payload->'catalog') as item(id text, data jsonb, price numeric, active boolean);
+  get diagnostics catalog_count = row_count;
+
+  insert into public.inventory (product_id, color, size, quantity)
+  select product_id, color, size, quantity
+  from jsonb_to_recordset(payload->'inventory') as item(product_id text, color text, size text, quantity integer);
+  get diagnostics variant_count = row_count;
+
+  return jsonb_build_object('products', catalog_count, 'variants', variant_count);
+end;
+$$;
+revoke all on function public.bootstrap_catalog(jsonb) from public, anon, authenticated;
+grant execute on function public.bootstrap_catalog(jsonb) to service_role;
