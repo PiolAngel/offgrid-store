@@ -3,16 +3,11 @@
 
 import ProductCard from "@/components/ProductCard";
 import { useStore } from "@/context/StoreContext";
-import type { Product } from "@/types";
 
 /** Máximo de productos que se muestran en esta sección. */
 const MAX_FEATURED = 8;
 
-interface FeaturedProductsProps {
-  products: Product[];
-}
-
-export default function FeaturedProducts({ products }: FeaturedProductsProps) {
+export default function FeaturedProducts() {
   const { isProductActive, products: currentProducts, catalogReady } = useStore();
 
   const featured = currentProducts
