@@ -12,6 +12,7 @@ import {
 import type { CartItem, Product } from "@/types";
 import { useEffect } from "react";
 import { readJSON, writeJSON } from "@/lib/storage";
+import { useStore } from "@/context/StoreContext";
 
 export const MAX_QUANTITY = 10;
 
@@ -61,6 +62,7 @@ interface CartContextValue {
 const CartContext = createContext<CartContextValue | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
+  const { products: currentProducts } = useStore();
   const [items, setItems] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
@@ -87,6 +89,20 @@ export function CartProvider({ children }: { children: ReactNode }) {
     itemsRef.current = nextItems;
     setItems(nextItems);
   }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    const next = itemsRef.current.flatMap((item) => {
+      const current = currentProducts.find((product) => product.id === item.product.id);
+      if (!current) return [];
+      const max = getMaxQuantity(current, item.size, item.color);
+      if (max < 1) return [];
+      return [{ ...item, product: current, quantity: Math.min(item.quantity, max) }];
+    });
+    const changed = next.length !== itemsRef.current.length ||
+      next.some((item, index) => item.product !== itemsRef.current[index].product || item.quantity !== itemsRef.current[index].quantity);
+    if (changed) commitItems(next);
+  }, [currentProducts, hydrated, commitItems]);
 
   const addItem = useCallback(
     (product: Product, size = "Único", color = "Único"): boolean => {
