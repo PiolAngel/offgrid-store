@@ -9,7 +9,7 @@ interface StoreContextValue {
   orders: Order[];
   getProduct: (id: string) => Product | undefined;
   isProductActive: (id: string) => boolean;
-  createOrder: (order: Omit<Order, "id" | "code" | "createdAt">) => Promise<Order>;
+  createOrder: (order: Omit<Order, "id" | "code" | "createdAt"> & { requestId: string }) => Promise<Order>;
   refresh: () => Promise<void>;
 }
 
@@ -40,6 +40,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        requestId: order.requestId,
         customer: order.customer,
         items: order.items,
         deliveryMethod: order.deliveryMethod,
