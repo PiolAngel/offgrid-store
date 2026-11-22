@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { products as fallbackProducts } from "@/data/products";
 import type { Order, Product } from "@/types";
 
@@ -18,12 +18,15 @@ const StoreContext = createContext<StoreContextValue | undefined>(undefined);
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [products, setProducts] = useState<Product[]>(fallbackProducts);
   const [activeIds, setActiveIds] = useState<string[]>(fallbackProducts.map((p) => p.id));
+  const latestRefreshId = useRef(0);
 
   const refresh = useCallback(async () => {
+    const refreshId = ++latestRefreshId.current;
     try {
       const response = await fetch("/api/catalog", { cache: "no-store" });
       if (!response.ok) return;
       const data = await response.json();
+      if (refreshId !== latestRefreshId.current) return;
       if (Array.isArray(data.products)) {
         setProducts(data.products);
         setActiveIds(data.products.map((p: Product) => p.id));
@@ -33,7 +36,36 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  useEffect(() => { void refresh(); }, [refresh]);
+  useEffect(() => {
+    void refresh();
+
+    // Revalidar al regresar desde el panel, otra pestaña o al recuperar la ventana.
+    const onFocus = () => { void refresh(); };
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void refresh();
+    };
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === "offgrid:catalog:refresh") void refresh();
+    };
+    const onCatalogChanged = () => { void refresh(); };
+    const timer = window.setInterval(() => {
+      if (!document.hidden) void refresh();
+    }, 30_000);
+
+    window.addEventListener("focus", onFocus);
+    window.addEventListener("pageshow", onFocus);
+    window.addEventListener("storage", onStorage);
+    window.addEventListener("offgrid:catalog-changed", onCatalogChanged);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener("pageshow", onFocus);
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("offgrid:catalog-changed", onCatalogChanged);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [refresh]);
 
   const createOrder = useCallback(async (order: Omit<Order, "id" | "code" | "createdAt"> & { requestId: string }): Promise<Order> => {
     const response = await fetch("/api/orders", {
