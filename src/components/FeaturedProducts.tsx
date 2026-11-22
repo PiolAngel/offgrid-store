@@ -13,9 +13,9 @@ interface FeaturedProductsProps {
 }
 
 export default function FeaturedProducts({ products }: FeaturedProductsProps) {
-  const { isProductActive } = useStore();
+  const { isProductActive, products: currentProducts } = useStore();
 
-  const featured = products
+  const featured = currentProducts
     .filter((product) => product.featured && isProductActive(product.id))
     .slice(0, MAX_FEATURED);
 
