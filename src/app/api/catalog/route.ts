@@ -13,7 +13,10 @@ export async function GET() {
       db<CatalogRow[]>("catalog?select=id,data,price,active&order=id"),
       db<InventoryRow[]>("inventory?select=product_id,color,size,quantity"),
     ]);
-    const products = catalog.filter((entry) => entry.active).map((entry) => ({
+    const displayOrder = new Map(baseProducts.map((product, index) => [product.id, index]));
+    const products = catalog.filter((entry) => entry.active)
+      .sort((first, second) => (displayOrder.get(first.id) ?? 9999) - (displayOrder.get(second.id) ?? 9999))
+      .map((entry) => ({
       ...entry.data,
       price: Number(entry.price),
       variants: entry.data.variants?.map((variant) => ({
