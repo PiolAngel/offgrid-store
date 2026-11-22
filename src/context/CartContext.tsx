@@ -73,13 +73,20 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const itemsRef = useRef<CartItem[]>([]);
 
   useEffect(() => {
+    let mounted = true;
     const saved = readJSON<CartItem[]>("offgrid:cart:v1");
-    if (Array.isArray(saved)) {
-      const safe = saved.filter((item) => item && item.product && typeof item.id === "string" && Number.isInteger(item.quantity) && item.quantity > 0).slice(0, 50);
+    const safe = Array.isArray(saved)
+      ? saved.filter((item) => item && item.product && typeof item.id === "string" && Number.isInteger(item.quantity) && item.quantity > 0).slice(0, 50)
+      : [];
+
+    // La restauración se ejecuta después del montaje, sin actualizar estado durante el efecto.
+    queueMicrotask(() => {
+      if (!mounted) return;
       itemsRef.current = safe;
       setItems(safe);
-    }
-    setHydrated(true);
+      setHydrated(true);
+    });
+    return () => { mounted = false; };
   }, []);
 
   useEffect(() => {
