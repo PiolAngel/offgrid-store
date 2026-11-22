@@ -17,12 +17,13 @@ export async function POST(request: Request) {
       !items.every((item: any) => item && typeof item.productId === "string" && item.productId.length < 100 &&
         typeof item.color === "string" && item.color.length < 100 && typeof item.size === "string" && item.size.length < 50 &&
         Number.isInteger(item.quantity) && item.quantity >= 1 && item.quantity <= 10) ||
+      typeof input.requestId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(input.requestId) ||
       !["delivery", "pickup"].includes(input.deliveryMethod) ||
       !["transfer", "cash"].includes(input.paymentMethod)
     ) return NextResponse.json({ error: "Verificá los datos del pedido" }, { status: 400 });
     const orders = await db<{ id: string; code: string; created_at: string; customer: any; items: any; subtotal: number; delivery_cost: number; total: number; delivery_method: string; payment_method: string; status: string; payment_status: string }[]>(
       "rpc/place_order", { method: "POST", body: JSON.stringify({ payload: {
-        customer, items: items.map(({ productId, color, size, quantity }: any) => ({ productId, color, size, quantity })),
+        requestId: input.requestId, customer, items: items.map(({ productId, color, size, quantity }: any) => ({ productId, color, size, quantity })),
         deliveryMethod: input.deliveryMethod, paymentMethod: input.paymentMethod,
       } }) },
     );
