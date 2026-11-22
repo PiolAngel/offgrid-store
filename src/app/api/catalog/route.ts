@@ -3,8 +3,6 @@ import { products as baseProducts } from "@/data/products";
 import { configured, db } from "@/lib/server/db";
 import type { Product } from "@/types";
 
-export const dynamic = "force-dynamic";
-
 type CatalogRow = { id: string; data: Product; price: number; active: boolean };
 type InventoryRow = { product_id: string; color: string; size: string; quantity: number };
 
