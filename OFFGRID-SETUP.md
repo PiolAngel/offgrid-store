@@ -14,7 +14,7 @@ Este branch es una implementación pendiente de activación y pruebas de extremo
 1. Crear proyecto Supabase en la cuenta del propietario y ejecutar `supabase/schema.sql` en SQL Editor. No compartir claves en chats.
 2. En Vercel → offgrid-store → Settings → Environment Variables, configurar directamente:
    - `SUPABASE_URL`: URL HTTPS del proyecto.
-   - `SUPABASE_SERVICE_ROLE_KEY`: clave secreta de servidor (nunca NEXT_PUBLIC).
+   - `SUPABASE_SECRET_KEY`: clave secreta moderna `sb_secret_...` de servidor (nunca NEXT_PUBLIC). También se admite la antigua `SUPABASE_SERVICE_ROLE_KEY`, pero se prefiere la moderna.
    - `ADMIN_PASSWORD`: contraseña larga y exclusiva para el panel.
    - `ADMIN_SESSION_SECRET`: cadena aleatoria de al menos 32 caracteres.
    Configurar Preview primero. Cuando se compruebe todo, configurar Production.
@@ -28,4 +28,4 @@ Este branch es una implementación pendiente de activación y pruebas de extremo
 - El panel muestra como máximo los últimos 200 pedidos en esta primera BETA.
 - Se necesita política de privacidad/tratamiento de datos del cliente, revisión de condiciones de envío y respaldo de base de datos antes de operar públicamente.
 - El acceso administrativo usa contraseña única. Activar una contraseña robusta, rotarla cuando corresponda y considerar protección adicional antes de escalar.
-- No distribuir la clave `SUPABASE_SERVICE_ROLE_KEY` ni añadirla a Git.
+- No distribuir la clave `SUPABASE_SECRET_KEY` ni `SUPABASE_SERVICE_ROLE_KEY` ni añadirla a Git.
