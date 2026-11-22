@@ -43,7 +43,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    void refresh();
+    let mounted = true;
+    queueMicrotask(() => { if (mounted) void refresh(); });
 
     // Revalidar al regresar desde el panel, otra pestaña o al recuperar la ventana.
     const onFocus = () => { void refresh(); };
@@ -64,6 +65,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     window.addEventListener("offgrid:catalog-changed", onCatalogChanged);
     document.addEventListener("visibilitychange", onVisible);
     return () => {
+      mounted = false;
       clearInterval(timer);
       window.removeEventListener("focus", onFocus);
       window.removeEventListener("pageshow", onFocus);
