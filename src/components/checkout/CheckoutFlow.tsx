@@ -28,6 +28,7 @@ const DRAFT_KEY = "offgrid:checkout-draft:v1";
 type Step = 1 | 2 | 3 | 4;
 
 interface Draft {
+  requestId: string;
   name: string;
   phone: string;
   address: string;
@@ -38,6 +39,7 @@ interface Draft {
 }
 
 const INITIAL_DRAFT: Draft = {
+  requestId: "",
   name: "",
   phone: "",
   address: "",
@@ -84,6 +86,7 @@ function parseDraft(raw: unknown): Draft {
   const data = raw as Record<string, unknown>;
 
   return {
+    requestId: typeof data.requestId === "string" ? data.requestId : "",
     name: typeof data.name === "string" ? data.name : "",
     phone: typeof data.phone === "string" ? data.phone : "",
     address: typeof data.address === "string" ? data.address : "",
@@ -216,7 +219,8 @@ export default function CheckoutFlow() {
 
   useEffect(() => {
     const stored = readJSON<unknown>(DRAFT_KEY);
-    if (stored) setDraft(parseDraft(stored));
+    const parsed = stored ? parseDraft(stored) : INITIAL_DRAFT;
+    setDraft({ ...parsed, requestId: /^[0-9a-f-]{36}$/i.test(parsed.requestId) ? parsed.requestId : crypto.randomUUID() });
     setDraftReady(true);
   }, []);
 
@@ -275,6 +279,7 @@ export default function CheckoutFlow() {
     setSubmitError("");
     try {
     const result = await createOrder({
+      requestId: draft.requestId,
       customer: {
         name: draft.name.trim(),
         phone,
