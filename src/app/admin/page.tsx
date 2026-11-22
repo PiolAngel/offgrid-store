@@ -10,6 +10,7 @@ export default function AdminPage() {
   const [password, setPassword] = useState("");
   const [data, setData] = useState<{ catalog: RecordRow[]; inventory: RecordRow[]; orders: RecordRow[] } | null>(null);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
   const [tab, setTab] = useState<"orders" | "stock">("orders");
 
@@ -37,13 +38,17 @@ export default function AdminPage() {
   }
 
   async function update(kind: string, id: string, field: string, value: unknown, color?: string, size?: string) {
-    setBusy(true); setError("");
+    setBusy(true); setError(""); setNotice("");
     try {
       const res = await fetch("/api/admin/data", { method: "PATCH", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ kind, id, field, value, color, size }) });
       const response = await res.json();
       if (!res.ok) throw new Error(response.error || "No se pudo guardar");
       await load();
+      // Notificar la página de tienda abierta en otra pestaña (mismo origen).
+      window.localStorage.setItem("offgrid:catalog:refresh", String(Date.now()));
+      window.dispatchEvent(new Event("offgrid:catalog-changed"));
+      setNotice("Cambio guardado. El catálogo de esta versión de pruebas se actualiza automáticamente.");
     } catch (err) { setError(err instanceof Error ? err.message : "Error"); }
     setBusy(false);
   }
@@ -82,12 +87,14 @@ export default function AdminPage() {
       <div className="mx-auto max-w-6xl space-y-7">
         <header className="flex flex-wrap items-center justify-between gap-4 border-b border-stone-300 pb-6">
           <div><p className="text-xs tracking-[.25em]">OFFGRID / CONTROL</p><h1 className="mt-2 font-serif text-4xl">Panel administrativo</h1></div>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
+            <a className={btn} href="/" target="_blank" rel="noopener noreferrer">Ver tienda BETA</a>
             <button className={btn} onClick={() => void load()}>Actualizar</button>
             <button className={btn} onClick={async () => { await fetch("/api/admin/session", { method: "DELETE" }); setLoggedIn(false); setData(null); }}>Salir</button>
           </div>
         </header>
         {error && <p role="alert" className="border border-red-300 bg-red-50 p-4 text-sm text-red-800">{error}</p>}
+        {notice && <p role="status" className="border border-stone-300 bg-white p-4 text-sm">{notice}</p>}
         {data && <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <div className="border border-stone-300 p-4"><p className="text-xs">PEDIDOS</p><p className="mt-2 text-3xl">{data.orders.length}</p></div>
           <div className="border border-stone-300 p-4"><p className="text-xs">PRODUCTOS</p><p className="mt-2 text-3xl">{data.catalog.length}</p></div>
