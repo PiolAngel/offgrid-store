@@ -1,4 +1,3 @@
-
 "use client";
 
 import {
@@ -6,6 +5,7 @@ import {
   useCallback,
   useContext,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -13,12 +13,42 @@ import type { CartItem, Product } from "@/types";
 
 export const MAX_QUANTITY = 10;
 
+/**
+ * Stock de una combinación de color y talle.
+ * Devuelve undefined si el stock no está definido (en ese caso no hay control de stock).
+ * Un stock de 0 significa agotado.
+ */
+export function getVariantStock(
+  product: Product,
+  size: string,
+  color: string,
+): number | undefined {
+  const variant = product.variants?.find((item) => item.color === color);
+  const value = variant?.stock?.[size];
+
+  if (typeof value !== "number" || !Number.isFinite(value)) return undefined;
+
+  return Math.max(0, Math.floor(value));
+}
+
+/** Cantidad máxima que puede tener el carrito de esta combinación: el menor entre el stock y MAX_QUANTITY. */
+export function getMaxQuantity(
+  product: Product,
+  size: string,
+  color: string,
+): number {
+  const stock = getVariantStock(product, size, color);
+
+  return stock === undefined ? MAX_QUANTITY : Math.min(MAX_QUANTITY, stock);
+}
+
 interface CartContextValue {
   items: CartItem[];
   totalItems: number;
   subtotal: number;
   isCartOpen: boolean;
-  addItem: (product: Product, size?: string, color?: string) => void;
+  /** Devuelve true si se agregó una unidad, o false si no hay stock disponible o se alcanzó el límite. */
+  addItem: (product: Product, size?: string, color?: string) => boolean;
   setQuantity: (itemId: string, quantity: number) => void;
   removeItem: (itemId: string) => void;
   clearCart: () => void;
@@ -32,30 +62,39 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
 
+  // Copia síncrona del carrito. Permite comprobar el stock con los datos más recientes,
+  // incluso cuando se llama a addItem varias veces seguidas (por ejemplo, cantidad 3 desde el modal).
+  const itemsRef = useRef<CartItem[]>([]);
+
+  const commitItems = useCallback((nextItems: CartItem[]) => {
+    itemsRef.current = nextItems;
+    setItems(nextItems);
+  }, []);
+
   const addItem = useCallback(
-    (product: Product, size = "Único", color = "Único") => {
+    (product: Product, size = "Único", color = "Único"): boolean => {
       const itemId = `${product.id}::${size}::${color}`;
+      const maxQuantity = getMaxQuantity(product, size, color);
+      const currentItems = itemsRef.current;
+      const existingItem = currentItems.find((item) => item.id === itemId);
+      const currentQuantity = existingItem?.quantity ?? 0;
 
-      setItems((currentItems) => {
-        const existingItem = currentItems.find(
-          (item) => item.id === itemId,
-        );
+      // Sin stock o límite alcanzado: no se agrega nada.
+      if (currentQuantity >= maxQuantity) {
+        if (existingItem) setIsCartOpen(true);
+        return false;
+      }
 
-        if (existingItem) {
-          return currentItems.map((item) =>
+      if (existingItem) {
+        commitItems(
+          currentItems.map((item) =>
             item.id === itemId
-              ? {
-                  ...item,
-                  quantity: Math.min(
-                    item.quantity + 1,
-                    MAX_QUANTITY,
-                  ),
-                }
+              ? { ...item, quantity: currentQuantity + 1 }
               : item,
-          );
-        }
-
-        return [
+          ),
+        );
+      } else {
+        commitItems([
           ...currentItems,
           {
             id: itemId,
@@ -64,46 +103,51 @@ export function CartProvider({ children }: { children: ReactNode }) {
             size,
             color,
           },
-        ];
-      });
+        ]);
+      }
 
       setIsCartOpen(true);
+      return true;
     },
-    [],
+    [commitItems],
   );
 
   const setQuantity = useCallback(
     (itemId: string, quantity: number) => {
-      if (quantity <= 0) {
-        setItems((currentItems) =>
-          currentItems.filter((item) => item.id !== itemId),
-        );
-        return;
-      }
+      if (!Number.isFinite(quantity)) return;
+
+      const currentItems = itemsRef.current;
+      const targetItem = currentItems.find((item) => item.id === itemId);
+
+      if (!targetItem) return;
 
       const safeQuantity = Math.min(
         Math.floor(quantity),
-        MAX_QUANTITY,
+        getMaxQuantity(targetItem.product, targetItem.size, targetItem.color),
       );
 
-      setItems((currentItems) =>
+      if (safeQuantity <= 0) {
+        commitItems(currentItems.filter((item) => item.id !== itemId));
+        return;
+      }
+
+      commitItems(
         currentItems.map((item) =>
-          item.id === itemId
-            ? { ...item, quantity: safeQuantity }
-            : item,
+          item.id === itemId ? { ...item, quantity: safeQuantity } : item,
         ),
       );
     },
-    [],
+    [commitItems],
   );
 
-  const removeItem = useCallback((itemId: string) => {
-    setItems((currentItems) =>
-      currentItems.filter((item) => item.id !== itemId),
-    );
-  }, []);
+  const removeItem = useCallback(
+    (itemId: string) => {
+      commitItems(itemsRef.current.filter((item) => item.id !== itemId));
+    },
+    [commitItems],
+  );
 
-  const clearCart = useCallback(() => setItems([]), []);
+  const clearCart = useCallback(() => commitItems([]), [commitItems]);
   const openCart = useCallback(() => setIsCartOpen(true), []);
   const closeCart = useCallback(() => setIsCartOpen(false), []);
 

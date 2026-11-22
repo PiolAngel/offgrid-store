@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Geist } from "next/font/google";
 import { CartProvider } from "@/context/CartContext";
+import { StoreProvider } from "@/context/StoreContext";
+import WhatsAppButton from "@/components/WhatsAppButton";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -65,7 +67,10 @@ export default function RootLayout({
       className={`${geistSans.variable} ${fraunces.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col bg-cream font-sans text-ink">
-        <CartProvider>{children}</CartProvider>
+        <StoreProvider>
+  <CartProvider>{children}</CartProvider>
+</StoreProvider>
+<WhatsAppButton />
       </body>
     </html>
   );

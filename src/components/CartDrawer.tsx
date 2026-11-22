@@ -2,13 +2,17 @@
 "use client";
 
 import { useEffect } from "react";
-import { useCart } from "@/context/CartContext";
-
-function formatPrice(price: number) {
-  return `Gs. ${price.toLocaleString("es-PY")}`;
-}
+import { useCart, getMaxQuantity } from "@/context/CartContext";
+import {
+  FREE_SHIPPING_THRESHOLD,
+  DELIVERY_COST,
+  formatPrice,
+  hasFreeShipping,
+} from "@/lib/pricing";
+import { useRouter } from "next/navigation";
 
 export default function CartDrawer() {
+  const router = useRouter();
   const {
     items,
     isCartOpen,
@@ -19,19 +23,17 @@ export default function CartDrawer() {
     removeItem,
     clearCart,
   } = useCart();
-  const FREE_SHIPPING_THRESHOLD = 500000;
 
-const remainingForFreeShipping = Math.max(
-  0,
-  FREE_SHIPPING_THRESHOLD - subtotal
-);
-
-const shippingProgress = Math.min(
-  100,
-  (subtotal / FREE_SHIPPING_THRESHOLD) * 100
-);
-
-const hasFreeShipping = subtotal >= FREE_SHIPPING_THRESHOLD;
+  const freeShipping = hasFreeShipping(subtotal);
+  const remainingForFreeShipping = Math.max(
+    0,
+    FREE_SHIPPING_THRESHOLD - subtotal,
+  );
+  const shippingProgress = Math.min(
+    100,
+    (subtotal / FREE_SHIPPING_THRESHOLD) * 100,
+  );
+  const deliveryCost = freeShipping ? 0 : DELIVERY_COST;
 
   useEffect(() => {
     if (!isCartOpen) return;
@@ -133,11 +135,15 @@ const hasFreeShipping = subtotal >= FREE_SHIPPING_THRESHOLD;
                             ? "#d8cbb7"
                             : "#eeeae2";
 
+                  const maxQuantity = getMaxQuantity(
+                    item.product,
+                    item.size,
+                    item.color,
+                  );
+                  const atLimit = item.quantity >= maxQuantity;
+
                   return (
-                    <article
-                      key={item.id}
-                      className="flex gap-4 py-5"
-                    >
+                    <article key={item.id} className="flex gap-4 py-5">
                       <div
                         className="flex h-32 w-24 shrink-0 items-center justify-center overflow-hidden"
                         style={{ backgroundColor }}
@@ -203,8 +209,12 @@ const hasFreeShipping = subtotal >= FREE_SHIPPING_THRESHOLD;
 
                             <button
                               type="button"
-                              aria-label="Aumentar cantidad"
-                              disabled={item.quantity >= 10}
+                              aria-label={
+                                atLimit
+                                  ? "Aumentar cantidad (límite alcanzado)"
+                                  : "Aumentar cantidad"
+                              }
+                              disabled={atLimit}
                               onClick={() =>
                                 setQuantity(item.id, item.quantity + 1)
                               }
@@ -215,9 +225,7 @@ const hasFreeShipping = subtotal >= FREE_SHIPPING_THRESHOLD;
                           </div>
 
                           <span className="text-xs font-medium">
-                            {formatPrice(
-                              item.product.price * item.quantity,
-                            )}
+                            {formatPrice(item.product.price * item.quantity)}
                           </span>
                         </div>
                       </div>
@@ -228,60 +236,42 @@ const hasFreeShipping = subtotal >= FREE_SHIPPING_THRESHOLD;
             </div>
 
             <footer className="border-t border-[#ded6ca] bg-[#f5f1e9] px-6 pb-6 pt-5">
+              <div
+                className="mb-4 rounded-sm border border-[#ded6ca] bg-[#eee9df] px-3 py-3"
+                aria-live="polite"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-semibold tracking-tight text-[#211f1c]">
+                    {freeShipping
+                      ? "¡Conseguiste delivery gratis!"
+                      : "Conseguí delivery gratis"}
+                  </p>
 
+                  <span className="shrink-0 text-xs font-semibold text-[#211f1c]">
+                    {Math.round(shippingProgress)}%
+                  </span>
+                </div>
 
-<div
-  className="mb-4 rounded-sm border border-[#ded6ca] bg-[#eee9df] px-3 py-3"
-  aria-live="polite"
->
-  <div className="flex items-center justify-between gap-3">
-    <p className="text-sm font-semibold tracking-tight text-[#211f1c]">
-      {hasFreeShipping
-        ? "¡Conseguiste delivery gratis!"
-        : "Conseguí delivery gratis"}
-    </p>
+                <div
+                  className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#d8d0c4]"
+                  role="progressbar"
+                  aria-label="Progreso para conseguir delivery gratis"
+                  aria-valuemin={0}
+                  aria-valuemax={FREE_SHIPPING_THRESHOLD}
+                  aria-valuenow={Math.min(subtotal, FREE_SHIPPING_THRESHOLD)}
+                >
+                  <div
+                    className="h-full rounded-full bg-[#292824] transition-[width] duration-300"
+                    style={{ width: `${shippingProgress}%` }}
+                  />
+                </div>
 
-    <span className="shrink-0 text-xs font-semibold text-[#211f1c]">
-      {Math.round(shippingProgress)}%
-    </span>
-  </div>
-
-  <div
-    className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#d8d0c4]"
-    role="progressbar"
-    aria-label="Progreso para conseguir delivery gratis"
-    aria-valuemin={0}
-    aria-valuemax={FREE_SHIPPING_THRESHOLD}
-    aria-valuenow={Math.min(subtotal, FREE_SHIPPING_THRESHOLD)}
-  >
-    <div
-      className="h-full rounded-full bg-[#292824] transition-[width] duration-300"
-      style={{ width: `${shippingProgress}%` }}
-    />
-  </div>
-
-  <p className="mt-2 text-xs font-medium text-[#37342f]">
-    {hasFreeShipping
-      ? "Tu pedido ya tiene envío gratis."
-      : `Te faltan ${formatPrice(remainingForFreeShipping)}`}
-  </p>
-</div>
-
-
-  <div
-    className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#d8d0c4]"
-    role="progressbar"
-    aria-label="Progreso para conseguir delivery gratis"
-    aria-valuemin={0}
-    aria-valuemax={FREE_SHIPPING_THRESHOLD}
-    aria-valuenow={Math.min(subtotal, FREE_SHIPPING_THRESHOLD)}
-  >
-    <div
-      className="h-full rounded-full bg-[#292824] transition-[width] duration-300"
-      style={{ width: `${shippingProgress}%` }}
-    />
-  </div>
-
+                <p className="mt-2 text-xs font-medium text-[#37342f]">
+                  {freeShipping
+                    ? "Tu pedido ya tiene envío gratis."
+                    : `Te faltan ${formatPrice(remainingForFreeShipping)}`}
+                </p>
+              </div>
 
               <div className="flex items-center justify-between">
                 <span className="text-sm">Subtotal</span>
@@ -291,27 +281,37 @@ const hasFreeShipping = subtotal >= FREE_SHIPPING_THRESHOLD;
               </div>
 
               <div className="mt-2 flex items-center justify-between text-sm">
-  <span className="text-[#77716a]">Delivery</span>
-  <span className="font-medium">
-    {hasFreeShipping ? "GRATIS" : formatPrice(15000)}
+                <span className="text-[#77716a]">Delivery</span>
+                <span className="font-medium">
+                  {deliveryCost === 0 ? "GRATIS" : formatPrice(deliveryCost)}
+                </span>
+              </div>
+
+              <div className="mt-3 flex items-center justify-between border-t border-[#ded6ca] pt-3">
+  <span className="text-sm font-semibold">Total</span>
+  <span className="text-lg font-semibold">
+    {formatPrice(subtotal + deliveryCost)}
   </span>
 </div>
 
-              <button
-                type="button"
-                disabled
-                className="mt-5 min-h-14 w-full cursor-not-allowed bg-[#b7b0a6] px-5 text-xs font-medium tracking-[0.15em] text-[#f5f1e9]"
-              >
-                FINALIZAR COMPRA · PRÓXIMAMENTE
-              </button>
+<button
+  type="button"
+  onClick={() => {
+    closeCart();
+    router.push("/checkout");
+  }}
+  className="mt-5 min-h-14 w-full bg-[#211f1c] px-5 text-xs font-medium tracking-[0.15em] text-[#f5f1e9] transition-colors hover:bg-[#45413b]"
+>
+  FINALIZAR COMPRA
+</button>
 
-              <button
-                type="button"
-                onClick={closeCart}
-                className="mt-3 min-h-11 w-full text-xs tracking-wider text-[#77716a] underline underline-offset-4 hover:text-[#211f1c]"
-              >
-                SEGUIR COMPRANDO
-              </button>
+<button
+  type="button"
+  onClick={closeCart}
+  className="mt-3 min-h-11 w-full text-xs tracking-wider text-[#77716a] underline underline-offset-4 hover:text-[#211f1c]"
+>
+  SEGUIR COMPRANDO
+</button>
             </footer>
           </>
         )}

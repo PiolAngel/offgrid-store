@@ -1,3 +1,4 @@
+
 export type CategoryId =
   | "sneakers"
   | "remeras"
@@ -18,6 +19,7 @@ export interface ProductVariant {
   image?: string;
   gallery?: string[];
   sizes?: string[];
+  stock?: Record<string, number>;
 }
 
 export interface Product {
@@ -42,4 +44,49 @@ export interface CartItem {
   quantity: number;
   size: string;
   color: string;
+}
+
+export type OrderStatus =
+  | "pending"
+  | "confirmed"
+  | "preparing"
+  | "shipped"
+  | "delivered"
+  | "cancelled";
+
+export type PaymentStatus = "pending" | "paid" | "failed";
+
+export type DeliveryMethod = "delivery" | "pickup";
+
+export type PaymentMethod = "transfer" | "cash";
+
+export interface OrderItem {
+  productId: string;
+  name: string;
+  price: number;
+  quantity: number;
+  color: string;
+  size: string;
+  image?: string;
+}
+
+export interface Order {
+  id: string;
+  code: string;
+  createdAt: string;
+  customer: {
+    name: string;
+    phone: string;
+    address?: string;
+    city?: string;
+    notes?: string;
+  };
+  items: OrderItem[];
+  subtotal: number;
+  deliveryCost: number;
+  total: number;
+  deliveryMethod: DeliveryMethod;
+  paymentMethod: PaymentMethod;
+  paymentStatus: PaymentStatus;
+  status: OrderStatus;
 }

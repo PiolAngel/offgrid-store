@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import ProductCard from "@/components/ProductCard";
 import { useProductFilter } from "@/hooks/useProductFilter";
 import { CATEGORY_SELECT_EVENT } from "@/lib/category-events";
+import { useStore } from "@/context/StoreContext";
 
 export default function Catalog() {
   const {
@@ -15,10 +16,14 @@ export default function Catalog() {
     priceRange,
     setPriceRange,
     categories,
-    filteredProducts,
+    filteredProducts: allFilteredProducts,
     resetFilters,
   } = useProductFilter();
+const { isProductActive } = useStore();
 
+const filteredProducts = allFilteredProducts.filter((product) =>
+  isProductActive(product.id),
+);
   // Escucha los clics de la sección Categorías y aplica el filtro elegido.
   useEffect(() => {
     function handleSelect(event: Event) {

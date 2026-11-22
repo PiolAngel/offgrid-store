@@ -1,4 +1,8 @@
+
+"use client";
+
 import ProductCard from "@/components/ProductCard";
+import { useStore } from "@/context/StoreContext";
 import type { Product } from "@/types";
 
 /** Máximo de productos que se muestran en esta sección. */
@@ -9,7 +13,11 @@ interface FeaturedProductsProps {
 }
 
 export default function FeaturedProducts({ products }: FeaturedProductsProps) {
-  const featured = products.filter((product) => product.featured).slice(0, MAX_FEATURED);
+  const { isProductActive } = useStore();
+
+  const featured = products
+    .filter((product) => product.featured && isProductActive(product.id))
+    .slice(0, MAX_FEATURED);
 
   if (featured.length === 0) return null;
 

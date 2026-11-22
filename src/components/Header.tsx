@@ -2,13 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useCart } from "@/context/CartContext";
+import FreeShippingBar from "@/components/FreeShippingBar";
 
 const NAV_LINKS = [
-  { href: "#categorias", label: "Categorías" },
-  { href: "#destacados", label: "Destacados" },
-  { href: "#catalogo", label: "Catálogo" },
-  { href: "#coleccion", label: "Colección" },
-  { href: "#nosotros", label: "Nosotros" },
+  { href: "/#categorias", label: "Categorías" },
+  { href: "/#destacados", label: "Destacados" },
+  { href: "/#catalogo", label: "Catálogo" },
+  { href: "/#coleccion", label: "Colección" },
+  { href: "/#nosotros", label: "Nosotros" },
 ] as const;
 
 const iconButtonClasses =
@@ -108,12 +109,14 @@ export default function Header() {
       : `Abrir carrito, ${totalItems} ${totalItems === 1 ? "producto" : "productos"}`;
 
   return (
-    <header className="sticky top-0 z-40 border-b border-ink/10 bg-cream/90 backdrop-blur">
+    <div className="sticky top-0 z-40">
+  <FreeShippingBar />
+  <header className="border-b border-ink/10 bg-cream/90 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 sm:px-8">
         {/* Logo */}
         <div className="flex flex-1 items-center">
           <a
-            href="#inicio"
+            href="/#inicio"
             aria-label="OFFGRID, ir al inicio"
             className="text-[17px] font-semibold tracking-[0.34em] text-ink"
           >
@@ -139,7 +142,7 @@ export default function Header() {
 
         {/* Acciones */}
         <div className="flex flex-1 items-center justify-end gap-1">
-          <a href="#catalogo" aria-label="Buscar productos" className={iconButtonClasses}>
+          <a href="/#catalogo" aria-label="Buscar productos" className={iconButtonClasses}>
             <SearchIcon />
           </a>
 
@@ -198,6 +201,7 @@ export default function Header() {
           ))}
         </ul>
       </nav>
-    </header>
+      </header>
+    </div>
   );
 }
