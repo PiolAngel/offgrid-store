@@ -18,6 +18,7 @@ create table if not exists public.orders (
   id uuid primary key default gen_random_uuid(),
   code text not null unique,
   request_key uuid not null unique,
+  request_fingerprint text not null,
   created_at timestamptz not null default now(),
   customer jsonb not null,
   items jsonb not null,
@@ -75,7 +76,13 @@ begin
   -- Las solicitudes repetidas con la misma UUID se serializan incluso si llegan simultáneamente.
   perform pg_advisory_xact_lock(hashtextextended(request_uuid::text, 0));
   select * into new_order from public.orders where request_key = request_uuid;
-  if found then return next new_order; return; end if;
+  if found then
+    if new_order.request_fingerprint is distinct from md5(payload::text) then
+      raise exception 'El pedido ya existe con datos distintos';
+    end if;
+    return next new_order;
+    return;
+  end if;
 
   -- Consolidar elementos iguales para evitar sobreventa mediante líneas repetidas.
   -- Orden fijo de bloqueos para evitar deadlocks entre compras simultáneas.
@@ -128,8 +135,8 @@ begin
     or coalesce((payload->>'expectedDeliveryCost')::numeric, -1) <> shipping then
     raise exception 'La cotización cambió. Actualizá el carrito.';
   end if;
-  insert into public.orders (code, request_key, customer, items, subtotal, delivery_cost, total, delivery_method, payment_method)
-  values ('OFF-' || lpad(nextval('public.offgrid_order_number')::text, 6, '0'), request_uuid,
+  insert into public.orders (code, request_key, request_fingerprint, customer, items, subtotal, delivery_cost, total, delivery_method, payment_method)
+  values ('OFF-' || lpad(nextval('public.offgrid_order_number')::text, 6, '0'), request_uuid, md5(payload::text),
     jsonb_build_object(
       'name',trim(customer_data->>'name'), 'phone',customer_data->>'phone',
       'address',trim(customer_data->>'address'), 'notes',coalesce(customer_data->>'notes','')
