@@ -42,7 +42,8 @@ export function getMaxQuantity(
 ): number {
   const stock = getVariantStock(product, size, color);
 
-  return stock === undefined ? MAX_QUANTITY : Math.min(MAX_QUANTITY, stock);
+  // Nunca suponer disponibilidad cuando no hay un stock válido.
+  return stock === undefined ? 0 : Math.min(MAX_QUANTITY, stock);
 }
 
 interface CartContextValue {
@@ -62,7 +63,7 @@ interface CartContextValue {
 const CartContext = createContext<CartContextValue | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const { products: currentProducts } = useStore();
+  const { products: currentProducts, catalogReady } = useStore();
   const [items, setItems] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
@@ -91,7 +92,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (!hydrated) return;
+    if (!hydrated || !catalogReady) return;
     const next = itemsRef.current.flatMap((item) => {
       const current = currentProducts.find((product) => product.id === item.product.id);
       if (!current) return [];
@@ -102,12 +103,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const changed = next.length !== itemsRef.current.length ||
       next.some((item, index) => item.product !== itemsRef.current[index].product || item.quantity !== itemsRef.current[index].quantity);
     if (changed) commitItems(next);
-  }, [currentProducts, hydrated, commitItems]);
+  }, [currentProducts, hydrated, catalogReady, commitItems]);
 
   const addItem = useCallback(
     (product: Product, size = "Único", color = "Único"): boolean => {
-      const itemId = `${product.id}::${size}::${color}`;
-      const maxQuantity = getMaxQuantity(product, size, color);
+      if (!catalogReady) return false;
+      const currentProduct = currentProducts.find((entry) => entry.id === product.id);
+      if (!currentProduct) return false;
+      const itemId = `${currentProduct.id}::${size}::${color}`;
+      const maxQuantity = getMaxQuantity(currentProduct, size, color);
       const currentItems = itemsRef.current;
       const existingItem = currentItems.find((item) => item.id === itemId);
       const currentQuantity = existingItem?.quantity ?? 0;
@@ -122,7 +126,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         commitItems(
           currentItems.map((item) =>
             item.id === itemId
-              ? { ...item, quantity: currentQuantity + 1 }
+              ? { ...item, product: currentProduct, quantity: currentQuantity + 1 }
               : item,
           ),
         );
@@ -131,7 +135,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           ...currentItems,
           {
             id: itemId,
-            product,
+            product: currentProduct,
             quantity: 1,
             size,
             color,
@@ -142,7 +146,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       setIsCartOpen(true);
       return true;
     },
-    [commitItems],
+    [commitItems, catalogReady, currentProducts],
   );
 
   const setQuantity = useCallback(
