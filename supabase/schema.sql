@@ -191,6 +191,12 @@ begin
   if current_order.status = 'cancelled' and new_status <> 'cancelled' then
     raise exception 'Cancelled orders cannot be reopened';
   end if;
+  if current_order.status = 'delivered' and new_status <> 'delivered' then
+    raise exception 'Delivered orders cannot be reverted';
+  end if;
+  if current_order.status = 'shipped' and new_status in ('pending','confirmed','preparing','cancelled') then
+    raise exception 'Shipped orders cannot be reverted or cancelled';
+  end if;
   if current_order.status <> 'cancelled' and new_status = 'cancelled' then
     for item in select value from jsonb_array_elements(current_order.items)
     loop
