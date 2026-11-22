@@ -7,7 +7,6 @@ import Catalog from "@/components/Catalog";
 import EditorialBanner from "@/components/EditorialBanner";
 import BrandStory from "@/components/BrandStory";
 import CartDrawer from "@/components/CartDrawer";
-import { products } from "@/data/products";
 
 export default function Home() {
   return (
@@ -16,7 +15,7 @@ export default function Home() {
       <main className="flex-1">
         <Hero />
         <CategoryGrid />
-        <FeaturedProducts products={products} />
+        <FeaturedProducts />
         <Catalog />
         <EditorialBanner />
         <BrandStory />
