@@ -163,3 +163,40 @@ end;
 $$;
 revoke all on function public.bootstrap_catalog(jsonb) from public, anon, authenticated;
 grant execute on function public.bootstrap_catalog(jsonb) to service_role;
+
+-- Cancelar un pedido repone stock una sola vez. No se permite reabrir un pedido cancelado.
+create or replace function public.set_order_status(order_uuid uuid, new_status text)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  current_order public.orders%rowtype;
+  item jsonb;
+  affected integer;
+begin
+  if new_status not in ('pending','confirmed','preparing','shipped','delivered','cancelled') then
+    raise exception 'Invalid status';
+  end if;
+  select * into current_order from public.orders where id = order_uuid for update;
+  if not found then raise exception 'Unknown order'; end if;
+  if current_order.status = 'cancelled' and new_status <> 'cancelled' then
+    raise exception 'Cancelled orders cannot be reopened';
+  end if;
+  if current_order.status <> 'cancelled' and new_status = 'cancelled' then
+    for item in select value from jsonb_array_elements(current_order.items)
+    loop
+      update public.inventory set quantity = quantity + (item->>'quantity')::integer
+        where product_id = item->>'productId'
+        and color = item->>'color'
+        and size = item->>'size';
+      get diagnostics affected = row_count;
+      if affected <> 1 then raise exception 'Inventory row missing'; end if;
+    end loop;
+  end if;
+  update public.orders set status = new_status where id = order_uuid;
+end;
+$$;
+revoke all on function public.set_order_status(uuid,text) from public, anon, authenticated;
+grant execute on function public.set_order_status(uuid,text) to service_role;
