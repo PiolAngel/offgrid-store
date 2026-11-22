@@ -71,6 +71,8 @@ begin
   then raise exception 'Invalid order'; end if;
 
   request_uuid := (payload->>'requestId')::uuid;
+  -- Las solicitudes repetidas con la misma UUID se serializan incluso si llegan simultáneamente.
+  perform pg_advisory_xact_lock(hashtextextended(request_uuid::text, 0));
   select * into new_order from public.orders where request_key = request_uuid;
   if found then return next new_order; return; end if;
 
@@ -96,7 +98,7 @@ begin
       or length(requested_product_id)>100 or length(variant_color)>100 or length(variant_size)>50
     then raise exception 'Invalid item'; end if;
 
-    select * into prod from public.catalog where id = requested_product_id and active = true;
+    select * into prod from public.catalog where id = requested_product_id and active = true for share;
     if not found then raise exception 'Unavailable product'; end if;
 
     -- Bloqueo y descuento atómicos: una compra concurrente no puede reservar el mismo stock.
@@ -120,6 +122,11 @@ begin
   select count(*) into requested_count from jsonb_array_elements(input_items);
   if jsonb_array_length(order_items) = 0 or requested_count = 0 then raise exception 'Empty order'; end if;
   shipping := case when payload->>'deliveryMethod' = 'pickup' or calculated_subtotal >= 500000 then 0 else 15000 end;
+  -- No confirmar una compra por un precio distinto al que el cliente aceptó.
+  if coalesce((payload->>'expectedSubtotal')::numeric, -1) <> calculated_subtotal
+    or coalesce((payload->>'expectedDeliveryCost')::numeric, -1) <> shipping then
+    raise exception 'La cotización cambió. Actualizá el carrito.';
+  end if;
   insert into public.orders (code, request_key, customer, items, subtotal, delivery_cost, total, delivery_method, payment_method)
   values ('OFF-' || lpad(nextval('public.offgrid_order_number')::text, 6, '0'), request_uuid,
     jsonb_build_object(
