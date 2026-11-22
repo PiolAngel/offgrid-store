@@ -3,6 +3,7 @@
 
 import { useEffect } from "react";
 import { useCart, getMaxQuantity } from "@/context/CartContext";
+import { useStore } from "@/context/StoreContext";
 import {
   FREE_SHIPPING_THRESHOLD,
   DELIVERY_COST,
@@ -13,6 +14,7 @@ import { useRouter } from "next/navigation";
 
 export default function CartDrawer() {
   const router = useRouter();
+  const { catalogReady } = useStore();
   const {
     items,
     isCartOpen,
@@ -300,10 +302,12 @@ export default function CartDrawer() {
     closeCart();
     router.push("/checkout");
   }}
-  className="mt-5 min-h-14 w-full bg-[#211f1c] px-5 text-xs font-medium tracking-[0.15em] text-[#f5f1e9] transition-colors hover:bg-[#45413b]"
+  disabled={!catalogReady}
+  className="mt-5 min-h-14 w-full bg-[#211f1c] px-5 text-xs font-medium tracking-[0.15em] text-[#f5f1e9] transition-colors hover:bg-[#45413b] disabled:cursor-not-allowed disabled:opacity-50"
 >
-  FINALIZAR COMPRA
+  {catalogReady ? "FINALIZAR COMPRA" : "VERIFICANDO DISPONIBILIDAD"}
 </button>
+{!catalogReady && <p role="status" className="mt-3 text-center text-xs text-[#77716a]">Estamos comprobando el stock en tiempo real.</p>}
 
 <button
   type="button"
