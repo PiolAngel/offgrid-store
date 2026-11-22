@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { Product, ProductVariant } from "@/types";
 import { useCart, MAX_QUANTITY } from "@/context/CartContext";
+import { useStore } from "@/context/StoreContext";
 import { formatPrice } from "@/lib/pricing";
 import {
   buildProductInquiryMessage,
@@ -59,6 +60,7 @@ function ProductModalContent({
   onClose,
 }: ProductModalProps) {
   const { addItem, items } = useCart();
+  const { catalogReady } = useStore();
   const [size, setSize] = useState("");
   const [color, setColor] = useState("");
   const [quantity, setQuantity] = useState(1);
@@ -134,7 +136,7 @@ function ProductModalContent({
 
   // No se puede agregar hasta tener un color y un talle válidos.
   const addDisabled =
-    selectedVariant === undefined || size === "" || allSoldOut || outOfUnits;
+    !catalogReady || selectedVariant === undefined || size === "" || allSoldOut || outOfUnits;
 
   const lowStockLabel =
     selectedStock !== undefined && selectedStock >= 1 && selectedStock <= 9
@@ -143,7 +145,9 @@ function ProductModalContent({
         : `Últimas ${selectedStock} unidades`
       : null;
 
-  const addButtonLabel = !selectedVariant
+  const addButtonLabel = !catalogReady
+    ? "COMPROBANDO DISPONIBILIDAD"
+    : !selectedVariant
     ? "ELEGÍ UN COLOR"
     : allSoldOut
       ? "AGOTADO"
