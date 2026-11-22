@@ -11,7 +11,7 @@ export async function POST(request: Request) {
     if (
       !customer || typeof customer.name !== "string" || customer.name.trim().length < 3 || customer.name.length > 120 ||
       !/^5959\d{8}$/.test(customer.phone ?? "") || typeof customer.address !== "string" ||
-      customer.address.length < 5 || customer.address.length > 500 ||
+      customer.address.length > 500 || (input.deliveryMethod === "delivery" && customer.address.trim().length < 5) ||
       (customer.notes !== undefined && (typeof customer.notes !== "string" || customer.notes.length > 500)) ||
       !Array.isArray(items) || items.length === 0 || items.length > 30 ||
       !items.every((item: any) => item && typeof item.productId === "string" && item.productId.length < 100 &&
