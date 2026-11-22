@@ -49,7 +49,7 @@ declare
   prod public.catalog%rowtype;
   stock_available integer;
   qty integer;
-  product_id text;
+  requested_product_id text;
   variant_color text;
   variant_size text;
   calculated_subtotal numeric(12,0) := 0;
@@ -88,30 +88,30 @@ begin
     group by item->>'productId', item->>'color', item->>'size'
     order by item->>'productId', item->>'color', item->>'size'
   loop
-    product_id := requested->>'productId';
+    requested_product_id := requested->>'productId';
     variant_color := requested->>'color';
     variant_size := requested->>'size';
     qty := (requested->>'quantity')::integer;
-    if qty < 1 or qty > 10 or product_id is null or variant_color is null or variant_size is null
-      or length(product_id)>100 or length(variant_color)>100 or length(variant_size)>50
+    if qty < 1 or qty > 10 or requested_product_id is null or variant_color is null or variant_size is null
+      or length(requested_product_id)>100 or length(variant_color)>100 or length(variant_size)>50
     then raise exception 'Invalid item'; end if;
 
-    select * into prod from public.catalog where id = product_id and active = true;
+    select * into prod from public.catalog where id = requested_product_id and active = true;
     if not found then raise exception 'Unavailable product'; end if;
 
     -- Bloqueo y descuento atómicos: una compra concurrente no puede reservar el mismo stock.
     select quantity into stock_available from public.inventory
-      where inventory.product_id = place_order.product_id
+      where inventory.product_id = requested_product_id
         and inventory.color = variant_color and inventory.size = variant_size for update;
     if not found or stock_available < qty then raise exception 'Insufficient stock'; end if;
 
     update public.inventory set quantity = quantity - qty
-      where inventory.product_id = place_order.product_id
+      where inventory.product_id = requested_product_id
         and inventory.color = variant_color and inventory.size = variant_size;
 
     calculated_subtotal := calculated_subtotal + prod.price * qty;
     order_items := order_items || jsonb_build_array(jsonb_build_object(
-      'productId', product_id, 'name', prod.data->>'name', 'price', prod.price,
+      'productId', requested_product_id, 'name', prod.data->>'name', 'price', prod.price,
       'color', variant_color, 'size', variant_size, 'quantity', qty,
       'image', prod.data->>'image'
     ));
