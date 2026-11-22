@@ -32,7 +32,7 @@ export async function PATCH(request: Request) {
     if (!input || typeof input.id !== "string" || input.id.length > 100) throw Error("invalid");
     if (input.kind === "order" && input.field === "status" &&
       ["pending", "confirmed", "preparing", "shipped", "delivered", "cancelled"].includes(input.value)) {
-      await db(`orders?id=eq.${encodeURIComponent(input.id)}`, { method: "PATCH", body: JSON.stringify({ status: input.value }) });
+      await db("rpc/set_order_status", { method: "POST", body: JSON.stringify({ order_uuid: input.id, new_status: input.value }) });
     } else if (input.kind === "order" && input.field === "payment_status" &&
       ["pending", "paid", "failed"].includes(input.value)) {
       await db(`orders?id=eq.${encodeURIComponent(input.id)}`, { method: "PATCH", body: JSON.stringify({ payment_status: input.value }) });
