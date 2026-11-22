@@ -12,13 +12,6 @@ export async function POST(request: Request) {
   try {
     const existing = await db<{ id: string }[]>("catalog?select=id&limit=1");
     if (existing.length) return NextResponse.json({ error: "El catálogo ya está inicializado; no se modificará el stock" }, { status: 409 });
-    await db("catalog", {
-      method: "POST",
-      headers: { Prefer: "return=minimal" },
-      body: JSON.stringify(products.map((product) => ({
-        id: product.id, data: product, price: product.price, active: true,
-      }))),
-    });
     const rows = products.flatMap((product) =>
       (product.variants ?? []).flatMap((variant) =>
         Object.entries(variant.stock ?? {}).map(([size, quantity]) => ({
@@ -26,10 +19,14 @@ export async function POST(request: Request) {
         })),
       ),
     );
-    await db("inventory", {
+    await db("rpc/bootstrap_catalog", {
       method: "POST",
-      headers: { Prefer: "return=minimal" },
-      body: JSON.stringify(rows),
+      body: JSON.stringify({ payload: {
+        catalog: products.map((product) => ({
+          id: product.id, data: product, price: product.price, active: true,
+        })),
+        inventory: rows,
+      } }),
     });
     return NextResponse.json({ ok: true, products: products.length, variants: rows.length });
   } catch {
