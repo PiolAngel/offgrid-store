@@ -115,7 +115,7 @@ async function run() {
       await page.getByRole("button",{name:"CONTINUAR"}).click();
       await page.getByRole("button",{name:/CONFIRMAR PEDIDO/i}).click();
       await page.getByText("¡Simulación completada!").waitFor();
-      await page.getByText("OFF-DEMO-0001").waitFor();
+      await page.getByText("OFF-DEMO-0001", { exact: true }).waitFor();
       await page.getByText("WhatsApp de demostración sin número configurado").waitFor();
       assert.equal(await page.locator('a[href*="api.whatsapp.com/send"]').count(),0);
       await page.evaluate(() => window.scrollTo(0,0));
