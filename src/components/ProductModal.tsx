@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import type { Product, ProductVariant } from "@/types";
 import { useCart, MAX_QUANTITY } from "@/context/CartContext";
 import { useStore } from "@/context/StoreContext";
@@ -248,9 +249,13 @@ function ProductModalContent({
           <div className="flex flex-col" style={{ backgroundColor }}>
             <div className="flex min-h-[280px] items-center justify-center md:min-h-[520px]">
               {mainImage ? (
-                <img
+                <Image
                   src={mainImage}
                   alt={`${product.name} — vista ${selectedImage + 1}`}
+                  width={900}
+                  height={1100}
+                  sizes="(min-width: 768px) 50vw, 100vw"
+                  loading="eager"
                   className="h-full max-h-[520px] min-h-[280px] w-full object-cover"
                 />
               ) : (
@@ -286,9 +291,12 @@ function ProductModalContent({
                         : "border-transparent opacity-60 hover:opacity-100"
                     }`}
                   >
-                    <img
+                    <Image
                       src={image}
                       alt={`${product.name} — miniatura ${index + 1}`}
+                      width={80}
+                      height={80}
+                      sizes="80px"
                       className="h-full w-full object-cover"
                     />
                   </button>
