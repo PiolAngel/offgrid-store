@@ -32,6 +32,8 @@ jobs:
           cache: npm
       - name: Instalar
         run: npm ci
+      - name: Verificar imágenes de todas las variantes
+        run: node tests/cart-variant-images.test.mjs
       - name: Lint
         run: npm run lint
       - name: Build

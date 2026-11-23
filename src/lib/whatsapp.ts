@@ -8,11 +8,12 @@ export const WHATSAPP_NUMBER = configuredNumber && /^5959\d{8}$/.test(configured
   ? configuredNumber
   : "";
 
-export function buildWhatsAppUrl(message: string): string {
+export function buildWhatsAppUrl(message: string): string | null {
+  // Sin número comercial autorizado no mostramos enlaces que abran
+  // WhatsApp sin un contacto seleccionado.
+  if (!WHATSAPP_NUMBER) return null;
   const text = encodeURIComponent(message || "Hola OFFGRID, estoy explorando la demostración de la tienda.");
-  return WHATSAPP_NUMBER
-    ? `https://wa.me/${WHATSAPP_NUMBER}?text=${text}`
-    : `https://api.whatsapp.com/send?text=${text}`;
+  return `https://wa.me/${WHATSAPP_NUMBER}?text=${text}`;
 }
 
 export function normalizePhone(phone: string): string {

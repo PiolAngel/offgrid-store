@@ -18,6 +18,18 @@ const sample = {
     stock: {"38":1,"39":2}
   }]
 };
+const tee = {
+  id:"5",slug:"essential-tee",name:"Essential Tee",category:"remeras",
+  price:189000,featured:true,description:"Remera de demostración.",
+  tone:"light",image:"/products/tees/essential-tee.png",
+  gallery:["/products/tees/essential-tee.png"],
+  variants:[
+    {color:"Crema",colorValue:"#e8dfd0",sizes:["S"],image:"/products/tees/essential-tee.png",stock:{S:3}},
+    {color:"Gris",colorValue:"#a5a5a2",sizes:["S"],image:"/products/tees/essential-tee-grey-1.webp",stock:{S:3}},
+    {color:"Negro",colorValue:"#252525",sizes:["S"],image:"/products/tees/essential-tee-black-1.webp",stock:{S:3}}
+  ]
+};
+
 const server = spawn("npm", ["run","start"], {
   env: {...process.env, PORT:"3100", SUPABASE_URL:"", SUPABASE_SECRET_KEY:"", SUPABASE_SERVICE_ROLE_KEY:""},
   stdio:"pipe",
@@ -57,7 +69,7 @@ async function run() {
       await page.route("**/api/catalog",route=>route.fulfill({
         status:200,contentType:"application/json",
         headers:{"cache-control":"no-store"},
-        body:JSON.stringify({configured:true,products:[sample]}),
+        body:JSON.stringify({configured:true,products:[sample,tee]}),
       }));
       await page.route("**/api/orders",async route=>{
         orderCount++;
@@ -103,11 +115,28 @@ async function run() {
       await page.getByRole("button",{name:"CONTINUAR"}).click();
       await page.getByRole("button",{name:/CONFIRMAR PEDIDO/i}).click();
       await page.getByText("¡Simulación completada!").waitFor();
-      await page.getByText("OFF-DEMO-0001").waitFor();
+      await page.getByText("OFF-DEMO-0001", { exact: true }).waitFor();
+      await page.getByText("WhatsApp de demostración sin número configurado").waitFor();
+      assert.equal(await page.locator('a[href*="api.whatsapp.com/send"]').count(),0);
       await page.evaluate(() => window.scrollTo(0,0));
       await page.waitForTimeout(250);
       assert.equal(orderCount,1,`Pedido duplicado en ${label}`);
       await page.screenshot({path:`test-artifacts/${label}-checkout.png`,fullPage:true});
+
+      // Regresión del defecto reportado: la foto debe seguir al color,
+      // incluyendo después de recargar y restaurar el carrito persistente.
+      await page.goto(URL,{waitUntil:"domcontentloaded"});
+      await page.getByRole("button",{name:/Ver detalles de Essential Tee/i}).first().click();
+      const teeModal = page.getByRole("dialog",{name:"Detalles de Essential Tee"});
+      await teeModal.getByRole("button",{name:"Gris",exact:true}).click();
+      await teeModal.getByRole("button",{name:/^S, pocas unidades$/i}).click();
+      await teeModal.getByRole("button",{name:/AGREGAR AL CARRITO/}).click();
+      const greyCart = page.getByRole("dialog",{name:"Tu carrito"});
+      const greyImage = await greyCart.locator("article").filter({hasText:"Essential Tee"}).locator("img").getAttribute("src");
+      assert(decodeURIComponent(greyImage||"").includes("/products/tees/essential-tee-grey-1.webp"),
+        `Foto incorrecta para Gris en ${label}: ${greyImage}`);
+      await page.screenshot({path:`test-artifacts/${label}-essential-tee-grey.png`,fullPage:true});
+      console.log(`E2E ${label}: Essential Tee Gris muestra imagen correcta`);
 
       if(label==="mobile") {
         await page.goto(URL,{waitUntil:"domcontentloaded"});

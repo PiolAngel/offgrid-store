@@ -6,11 +6,12 @@ import { buildWhatsAppUrl } from "@/lib/whatsapp";
 export default function WhatsAppButton() {
   const pathname = usePathname();
 
-  if (pathname.startsWith("/admin") || pathname.startsWith("/checkout")) return null;
+  const contactUrl = buildWhatsAppUrl("");
+  if (!contactUrl || pathname.startsWith("/admin") || pathname.startsWith("/checkout")) return null;
 
   return (
     <a
-      href={buildWhatsAppUrl("")}
+      href={contactUrl}
       target="_blank"
       rel="noopener noreferrer"
       aria-label="Contactar con OFFGRID por WhatsApp"

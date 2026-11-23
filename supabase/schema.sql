@@ -236,24 +236,66 @@ returns jsonb language plpgsql security definer set search_path = public, pg_tem
 as $$
 declare
   n_orders integer;
-  n_variants integer;
+  n_variants integer := 0;
+  n_inventory integer;
+  fixture record;
 begin
   perform pg_advisory_xact_lock(84921006);
+  select count(*) into n_inventory from public.inventory;
+
+  -- Verificar que cada combinación de color/talle del fixture exista
+  -- y sea única antes de borrar pedidos de prueba.
+  for fixture in
+    select c.id as product_id,
+           v.value->>'color' as variant_color,
+           sizes.key as variant_size,
+           greatest(0, sizes.value::integer) as initial_quantity
+    from public.catalog c
+    cross join lateral jsonb_array_elements(c.data->'variants') as v(value)
+    cross join lateral jsonb_each_text(v.value->'stock') as sizes(key, value)
+  loop
+    if not exists (
+      select 1 from public.inventory i
+      where i.product_id=fixture.product_id
+        and i.color=fixture.variant_color
+        and i.size=fixture.variant_size
+    ) then
+      raise exception 'Falta variante de inventario del fixture DEMO';
+    end if;
+    n_variants := n_variants + 1;
+  end loop;
+
+  if n_variants <> n_inventory then
+    raise exception 'Inventario DEMO y fixture no coinciden';
+  end if;
+
   select count(*) into n_orders from public.orders;
   delete from public.orders;
+
   update public.catalog
     set price = greatest(0, (data->>'price')::numeric),
         active = true;
-  update public.inventory inv
-    set quantity = greatest(0, initial_stock.value::integer)
-    from public.catalog catalog_row,
-      lateral jsonb_array_elements(catalog_row.data->'variants') variant,
-      lateral jsonb_each_text(variant->'stock') initial_stock
-    where inv.product_id = catalog_row.id
-      and inv.color = variant->>'color'
-      and inv.size = initial_stock.key;
-  get diagnostics n_variants = row_count;
-  return jsonb_build_object('orders_deleted', n_orders, 'variants_reset', n_variants);
+
+  -- Cambiar una fila por vez evita cardinalidad ambigua en el UPDATE.
+  for fixture in
+    select c.id as product_id,
+           v.value->>'color' as variant_color,
+           sizes.key as variant_size,
+           greatest(0, sizes.value::integer) as initial_quantity
+    from public.catalog c
+    cross join lateral jsonb_array_elements(c.data->'variants') as v(value)
+    cross join lateral jsonb_each_text(v.value->'stock') as sizes(key, value)
+  loop
+    update public.inventory
+    set quantity=fixture.initial_quantity
+    where product_id=fixture.product_id
+      and color=fixture.variant_color
+      and size=fixture.variant_size;
+    if not found then
+      raise exception 'Variante del fixture DEMO desapareció durante el restablecimiento';
+    end if;
+  end loop;
+  return jsonb_build_object('orders_deleted',n_orders,'variants_reset',n_variants);
 end;
 $$;
 revoke all on function public.reset_offgrid_demo() from public, anon, authenticated;

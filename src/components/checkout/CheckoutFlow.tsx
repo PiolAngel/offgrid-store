@@ -354,6 +354,7 @@ export default function CheckoutFlow() {
       "",
       `Total: ${formatPrice(order.total)}`,
     ].join("\n");
+    const contactUrl = buildWhatsAppUrl(message);
 
     return (
       <section className="mx-auto max-w-2xl px-5 py-12 text-[#211f1c] sm:py-16">
@@ -395,14 +396,32 @@ export default function CheckoutFlow() {
             <Totals subtotal={order.subtotal} deliveryCost={order.deliveryCost} />
           </div>
 
-          <a
-            href={buildWhatsAppUrl(message)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-8 flex min-h-14 items-center justify-center bg-[#211f1c] px-5 text-center text-xs font-medium tracking-[0.15em] text-[#f5f1e9] hover:bg-[#45413b]"
-          >
-            VER MENSAJE DE DEMOSTRACIÓN EN WHATSAPP
-          </a>
+          {contactUrl ? (
+            <a
+              href={contactUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-8 flex min-h-14 items-center justify-center bg-[#211f1c] px-5 text-center text-xs font-medium tracking-[0.15em] text-[#f5f1e9] hover:bg-[#45413b]"
+            >
+              VER MENSAJE DE DEMOSTRACIÓN EN WHATSAPP
+            </a>
+          ) : (
+            <div className="mt-8 border border-[#d9d2c7] bg-white p-4">
+              <p className="text-sm font-medium">WhatsApp de demostración sin número configurado</p>
+              <p className="mt-2 text-xs leading-relaxed text-[#77716a]">
+                Dirección General debe autorizar un número comercial de la agencia. Mientras tanto,
+                podés seleccionar y copiar el mensaje ficticio desde este campo.
+              </p>
+              <textarea
+                aria-label="Mensaje de demostración para copiar"
+                readOnly
+                value={message}
+                rows={6}
+                onFocus={(event) => event.currentTarget.select()}
+                className="mt-3 w-full resize-y border border-[#d9d2c7] bg-[#f5f1e9] p-3 text-xs"
+              />
+            </div>
+          )}
 
           <Link
             href="/"
@@ -411,7 +430,7 @@ export default function CheckoutFlow() {
             SEGUIR EXPLORANDO
           </Link>
           <p className="mt-3 text-center text-[11px] text-[#89837c]">
-            WhatsApp abrirá un mensaje preparado. Vos decidís si lo enviás.
+            {contactUrl ? "WhatsApp abrirá un mensaje preparado. Vos decidís si lo enviás." : "No se enviará ningún mensaje mientras falte el destinatario autorizado."}
           </p>
         </div>
       </section>
