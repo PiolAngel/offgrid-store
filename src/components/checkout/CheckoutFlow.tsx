@@ -321,7 +321,7 @@ export default function CheckoutFlow() {
     removeKey(DRAFT_KEY);
     clearCart();
     setOrder(result);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 0, behavior: "auto" });
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : "No se pudo registrar el pedido.");
     } finally {
