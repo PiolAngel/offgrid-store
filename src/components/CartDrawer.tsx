@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import Image from "next/image";
 import { useCart, getMaxQuantity } from "@/context/CartContext";
 import { useStore } from "@/context/StoreContext";
+import { getCartVariantImage } from "@/lib/cart-variant-image";
 import {
   FREE_SHIPPING_THRESHOLD,
   DELIVERY_COST,
@@ -144,6 +145,7 @@ export default function CartDrawer() {
                     item.color,
                   );
                   const atLimit = item.quantity >= maxQuantity;
+                  const variantImage = getCartVariantImage(item.product, item.color);
 
                   return (
                     <article key={item.id} className="flex gap-4 py-5">
@@ -151,10 +153,10 @@ export default function CartDrawer() {
                         className="flex h-32 w-24 shrink-0 items-center justify-center overflow-hidden"
                         style={{ backgroundColor }}
                       >
-                        {item.product.image ? (
+                        {variantImage ? (
                           <Image
-                            src={item.product.image}
-                            alt={item.product.name}
+                            src={variantImage}
+                            alt={`${item.product.name} — ${item.color}`}
                             width={96}
                             height={128}
                             sizes="96px"
@@ -168,7 +170,7 @@ export default function CartDrawer() {
                                 : "text-[#37342f]"
                             }`}
                           >
-                            OFFGRID
+                            SIN FOTO
                           </span>
                         )}
                       </div>

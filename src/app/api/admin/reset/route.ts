@@ -26,7 +26,12 @@ export async function POST(request: Request) {
       body: "{}",
     });
     return NextResponse.json({ ok: true, ...result }, { headers: { "Cache-Control": "no-store" } });
-  } catch {
-    return NextResponse.json({ error: "No fue posible restablecer el catálogo" }, { status: 503 });
+  } catch (error) {
+    // PostgreSQL revierte toda la operación si la función falla. No
+    // revelamos detalles internos de la base de datos al visitante.
+    console.error("OFFGRID demo reset error:", error instanceof Error ? error.name : "unknown");
+    return NextResponse.json({
+      error: "No se pudo restablecer la DEMO. No se confirmó el restablecimiento. El administrador debe revisar la función SQL."
+    }, { status: 503 });
   }
 }

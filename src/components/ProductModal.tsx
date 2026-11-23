@@ -210,6 +210,13 @@ function ProductModalContent({
     setQuantity(1);
   }
 
+  const inquiryUrl = buildWhatsAppUrl(buildProductInquiryMessage({
+    name: product.name,
+    price: product.price,
+    color: selectedVariant?.color,
+    size: size || undefined,
+  }));
+
   function handleAddToCart() {
     if (!product || !selectedVariant || !size || addDisabled) return;
     if (!sizes.includes(size) || isSizeSoldOut(selectedVariant, size)) return;
@@ -492,21 +499,20 @@ function ProductModalContent({
               {addButtonLabel}
             </button>
 
-<a
-  href={buildWhatsAppUrl(
-    buildProductInquiryMessage({
-      name: product.name,
-      price: product.price,
-      color: selectedVariant?.color,
-      size: size || undefined,
-    }),
-  )}
-  target="_blank"
-  rel="noopener noreferrer"
-  className="mt-3 flex min-h-12 w-full items-center justify-center border border-[#211f1c] px-5 text-xs font-medium tracking-[0.16em] transition-colors hover:bg-[#211f1c] hover:text-[#f5f1e9]"
->
-  CONSULTAR POR WHATSAPP
-</a>
+{inquiryUrl ? (
+  <a
+    href={inquiryUrl}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="mt-3 flex min-h-12 w-full items-center justify-center border border-[#211f1c] px-5 text-xs font-medium tracking-[0.16em] transition-colors hover:bg-[#211f1c] hover:text-[#f5f1e9]"
+  >
+    CONSULTAR POR WHATSAPP
+  </a>
+) : (
+  <p className="mt-3 border border-[#d9d2c7] px-4 py-3 text-center text-xs text-[#77716a]">
+    Contacto de WhatsApp DEMO pendiente de configuración por Dirección General.
+  </p>
+)}
 
             <p className="mt-4 text-center text-[10px] tracking-wide text-[#89837c]">
               ESTILO QUE HABLA POR VOS.
