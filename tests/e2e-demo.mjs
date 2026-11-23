@@ -20,7 +20,8 @@ const sample = {
 };
 const server = spawn("npm", ["run","start"], {
   env: {...process.env, PORT:"3100", SUPABASE_URL:"", SUPABASE_SECRET_KEY:"", SUPABASE_SERVICE_ROLE_KEY:""},
-  stdio:"pipe"
+  stdio:"pipe",
+  detached:true,
 });
 server.stdout.on("data", chunk => process.stdout.write(chunk));
 server.stderr.on("data", chunk => process.stderr.write(chunk));
@@ -46,6 +47,8 @@ async function run() {
       mobile:{width:390,height:844},
     })) {
       const page=await browser.newPage({viewport,deviceScaleFactor:1});
+      page.setDefaultTimeout(12000);
+      console.log(`INICIO E2E ${label}`);
       let orderCount=0;
       await page.route("**/api/catalog",route=>route.fulfill({
         status:200,contentType:"application/json",
@@ -75,7 +78,8 @@ async function run() {
         })});
       });
 
-      await page.goto(URL,{waitUntil:"networkidle"});
+      await page.goto(URL,{waitUntil:"domcontentloaded"});
+      console.log(`Catálogo cargando (${label})`);
       await page.getByRole("note").getByText("OFFGRID · DEMO").waitFor();
       await page.getByRole("button",{name:/Ver detalles de White Sneakers/i}).first().click();
       const dialog=page.getByRole("dialog").first();
@@ -99,7 +103,7 @@ async function run() {
       await page.screenshot({path:`test-artifacts/${label}-checkout.png`,fullPage:true});
 
       if(label==="mobile") {
-        await page.goto(URL,{waitUntil:"networkidle"});
+        await page.goto(URL,{waitUntil:"domcontentloaded"});
         await page.getByRole("button",{name:"Abrir menú"}).click();
         await page.getByRole("navigation",{name:"Navegación móvil"}).getByText("Catálogo").waitFor();
         await page.screenshot({path:"test-artifacts/mobile-menu.png",fullPage:true});
@@ -121,5 +125,8 @@ try {
   console.error(error);
   process.exitCode=1;
 } finally {
-  server.kill("SIGTERM");
+  try { process.kill(-server.pid, "SIGTERM"); } catch { server.kill("SIGTERM"); }
+  server.stdout.destroy();
+  server.stderr.destroy();
+  process.exit(process.exitCode ?? 0);
 }
