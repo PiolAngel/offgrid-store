@@ -1,13 +1,18 @@
 import type { CartItem, Order } from "@/types";
 import { formatPrice } from "@/lib/pricing";
 
-const configuredNumber = process.env.NEXT_PUBLIC_OFFGRID_WHATSAPP?.replace(/\\D/g, "");
-export const WHATSAPP_NUMBER = configuredNumber && /^5959\\d{8}$/.test(configuredNumber)
+// Para la BETA no usamos un destinatario real sin autorización.
+// Cuando se establezca un teléfono válido, el mismo código podrá abrir el chat directo.
+const configuredNumber = process.env.NEXT_PUBLIC_OFFGRID_WHATSAPP?.replace(/\D/g, "");
+export const WHATSAPP_NUMBER = configuredNumber && /^5959\d{8}$/.test(configuredNumber)
   ? configuredNumber
-  : "595981951940";
+  : "";
 
 export function buildWhatsAppUrl(message: string): string {
-  return `https://wa.me/${WHATSAPP_NUMBER}${message ? `?text=${encodeURIComponent(message)}` : ""}`;
+  const text = encodeURIComponent(message || "Hola OFFGRID, estoy explorando la demostración de la tienda.");
+  return WHATSAPP_NUMBER
+    ? `https://wa.me/${WHATSAPP_NUMBER}?text=${text}`
+    : `https://api.whatsapp.com/send?text=${text}`;
 }
 
 export function normalizePhone(phone: string): string {
