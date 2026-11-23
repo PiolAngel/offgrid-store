@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import type { Product } from "@/types";
 import ProductModal from "@/components/ProductModal";
 
@@ -40,10 +41,12 @@ export default function ProductCard({ product }: ProductCardProps) {
           style={{ backgroundColor }}
         >
           {product.image ? (
-            <img
+            <Image
               src={product.image}
               alt={product.name}
-              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+              fill
+              sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
+              className="object-cover transition-transform duration-500 group-hover:scale-105"
             />
           ) : (
             <div className="flex h-full w-full flex-col items-center justify-center gap-3 p-4">
