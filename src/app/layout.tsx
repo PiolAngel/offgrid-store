@@ -18,6 +18,7 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
+  robots: { index: false, follow: false, nocache: true },
   metadataBase: new URL("https://offgrid-store-rho.vercel.app"),
   title: "OFFGRID — Demo de e-commerce streetwear",
     description:
