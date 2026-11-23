@@ -87,7 +87,8 @@ async function run() {
       await dialog.getByRole("button",{name:/38, pocas unidades/i}).click();
       await dialog.getByRole("button",{name:/AGREGAR AL CARRITO/}).click();
 
-      await page.getByRole("button",{name:/Abrir carrito/i}).click();
+      // Al agregar el producto, la propia tienda abre el carrito automáticamente.
+      await page.getByRole("dialog",{name:"Tu carrito"}).waitFor();
       await page.getByRole("button",{name:"FINALIZAR COMPRA"}).click();
       await page.waitForURL("**/checkout");
       await page.getByRole("button",{name:"Usar datos de ejemplo"}).click();
