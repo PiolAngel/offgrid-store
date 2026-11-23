@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect } from "react";
+import Image from "next/image";
 import { useCart, getMaxQuantity } from "@/context/CartContext";
 import { useStore } from "@/context/StoreContext";
 import {
@@ -151,9 +152,12 @@ export default function CartDrawer() {
                         style={{ backgroundColor }}
                       >
                         {item.product.image ? (
-                          <img
+                          <Image
                             src={item.product.image}
                             alt={item.product.name}
+                            width={96}
+                            height={128}
+                            sizes="96px"
                             className="h-full w-full object-cover"
                           />
                         ) : (
