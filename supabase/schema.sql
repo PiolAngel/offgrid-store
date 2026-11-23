@@ -270,11 +270,12 @@ begin
   end if;
 
   select count(*) into n_orders from public.orders;
-  delete from public.orders;
+  delete from public.orders where id is not null;
 
   update public.catalog
     set price = greatest(0, (data->>'price')::numeric),
-        active = true;
+        active = true
+    where id is not null;
 
   -- Cambiar una fila por vez evita cardinalidad ambigua en el UPDATE.
   for fixture in
