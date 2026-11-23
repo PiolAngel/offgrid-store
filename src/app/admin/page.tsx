@@ -84,6 +84,33 @@ export default function AdminPage() {
     setBusy(false);
   }
 
+  async function resetDemo() {
+    const confirmation = window.prompt(
+      "Se borrarán los pedidos de prueba y se restaurará el stock, los precios y los productos ficticios. Para confirmar escribí: RESTABLECER DEMO"
+    );
+    if (confirmation !== "RESTABLECER DEMO") return;
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      const res = await fetch("/api/admin/reset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirmation }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "No se pudo restablecer");
+      await load();
+      window.localStorage.setItem("offgrid:catalog:refresh", String(Number(window.localStorage.getItem("offgrid:catalog:refresh") || "0") + 1));
+      window.dispatchEvent(new Event("offgrid:catalog-changed"));
+      setNotice("Demo restaurada. Se borraron los pedidos de prueba y volvió el inventario ficticio original.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo restablecer");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function seed() {
     if (!window.confirm("¿Inicializar los productos y stock de la BETA? Solo se permite con catálogo vacío.")) return;
     setBusy(true);
@@ -121,6 +148,7 @@ export default function AdminPage() {
           <div className="flex flex-wrap gap-3">
             <a className={btn} href="/" target="_blank" rel="noopener noreferrer">Ver tienda BETA</a>
             <button className={btn} onClick={() => void load()}>Actualizar</button>
+            <button className={btn + " border-amber-700 text-amber-800"} disabled={busy} onClick={() => void resetDemo()}>Restablecer demo</button>
             <button className={btn} onClick={async () => { await fetch("/api/admin/session", { method: "DELETE" }); setLoggedIn(false); setData(null); }}>Salir</button>
           </div>
         </header>
