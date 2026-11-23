@@ -3,6 +3,7 @@ import { Fraunces, Geist } from "next/font/google";
 import { CartProvider } from "@/context/CartContext";
 import { StoreProvider } from "@/context/StoreContext";
 import WhatsAppButton from "@/components/WhatsAppButton";
+import DemoNotice from "@/components/DemoNotice";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -18,7 +19,7 @@ const fraunces = Fraunces({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://offgrid-store-rho.vercel.app"),
-  title: "OFFGRID — Streetwear, básicos premium y sneakers",
+  title: "OFFGRID — Demo de e-commerce streetwear",
     description:
     "Descubrí OFFGRID: ropa urbana, básicos premium y sneakers seleccionados para todos los días.",
   icons: {
@@ -67,6 +68,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${fraunces.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col bg-cream font-sans text-ink">
+        <DemoNotice />
         <StoreProvider>
   <CartProvider>{children}</CartProvider>
 </StoreProvider>
