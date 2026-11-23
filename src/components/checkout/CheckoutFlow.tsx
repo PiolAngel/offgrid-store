@@ -339,7 +339,7 @@ export default function CheckoutFlow() {
 
   if (order) {
     const message = [
-      `Hola OFFGRID, quiero confirmar mi pedido ${order.code}.`,
+      `DEMO OFFGRID — pedido ficticio ${order.code} (no realizar cobro ni entrega).`,
       "",
       `Cliente: ${order.customer.name}`,
       `Teléfono: +${order.customer.phone}`,
@@ -359,10 +359,10 @@ export default function CheckoutFlow() {
       <section className="mx-auto max-w-2xl px-5 py-12 text-[#211f1c] sm:py-16">
         <div className="border border-[#d9d2c7] bg-[#f5f1e9] p-6 sm:p-9">
           <p className="text-[10px] tracking-[0.3em] text-[#77716a]">
-            PEDIDO REGISTRADO
+            PEDIDO DE DEMOSTRACIÓN
           </p>
           <h1 className="mt-3 font-serif text-4xl">
-            ¡Gracias por tu pedido!
+            ¡Simulación completada!
           </h1>
           <p className="mt-6 text-[10px] tracking-[0.2em] text-[#77716a]">
             CÓDIGO DE PEDIDO
@@ -372,7 +372,7 @@ export default function CheckoutFlow() {
           </p>
 
           <p className="mt-5 bg-[#eee9df] px-4 py-3 text-xs leading-relaxed text-[#5e5a52]">
-            Tu pedido fue registrado. Para coordinar la entrega y el pago, enviá el mensaje por WhatsApp. No se realizó ningún cobro online.
+            Este pedido de ejemplo quedó registrado en el panel de la BETA para demostrar el flujo. No existe una compra real ni se realizará ningún cobro o entrega.
           </p>
 
           <div className="mt-6 space-y-2 text-sm">
@@ -401,7 +401,7 @@ export default function CheckoutFlow() {
             rel="noopener noreferrer"
             className="mt-8 flex min-h-14 items-center justify-center bg-[#211f1c] px-5 text-center text-xs font-medium tracking-[0.15em] text-[#f5f1e9] hover:bg-[#45413b]"
           >
-            ENVIAR PEDIDO POR WHATSAPP
+            VER MENSAJE DE DEMOSTRACIÓN EN WHATSAPP
           </a>
 
           <Link
@@ -469,6 +469,19 @@ export default function CheckoutFlow() {
                   placeholder="Nombre y apellido"
                   error={showErrors ? errors.name : undefined}
                 />
+                <div className="mb-5 flex flex-col gap-2 rounded-sm border border-[#d9d2c7] bg-[#eee9df] p-4 text-xs text-[#5e5a52] sm:flex-row sm:items-center sm:justify-between">
+                  <p>Prueba la compra sin introducir datos personales reales.</p>
+                  <button type="button" className="shrink-0 font-semibold underline underline-offset-4" onClick={() => {
+                    setDraft((current) => ({
+                      ...current,
+                      name: "Cliente Demostración",
+                      phone: "0981 000 000",
+                      address: "Calle Ficticia 123, Asunción",
+                      notes: "Pedido ficticio de la demo",
+                    }));
+                    setShowErrors(false);
+                  }}>Usar datos de ejemplo</button>
+                </div>
                 <Field
                   label="TELÉFONO / WHATSAPP"
                   value={draft.phone}
@@ -588,6 +601,10 @@ export default function CheckoutFlow() {
                   {catalogError && <button type="button" className="ml-2 underline" onClick={() => void refresh()}>Reintentar</button>}
                 </div>
               )}
+              <p className="mt-5 text-xs leading-relaxed text-[#77716a]">
+                Estás simulando una compra para evaluar esta demo comercial. Los productos, precios y existencias son ficticios.
+                No se cobrará ni entregará ningún artículo.
+              </p>
               {submitError && (
                 <div role="alert" className="mt-5 text-sm text-red-700">
                   {submitError}
