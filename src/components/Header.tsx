@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useCart } from "@/context/CartContext";
 import FreeShippingBar from "@/components/FreeShippingBar";
 
