@@ -228,3 +228,33 @@ end;
 $$;
 revoke all on function public.set_order_status(uuid,text) from public, anon, authenticated;
 grant execute on function public.set_order_status(uuid,text) to service_role;
+
+
+-- Herramienta para presentaciones: sólo el servidor autorizado puede restaurar datos ficticios.
+create or replace function public.reset_offgrid_demo()
+returns jsonb language plpgsql security definer set search_path = public, pg_temp
+as $$
+declare
+  n_orders integer;
+  n_variants integer;
+begin
+  perform pg_advisory_xact_lock(84921006);
+  select count(*) into n_orders from public.orders;
+  delete from public.orders;
+  update public.catalog
+    set price = greatest(0, (data->>'price')::numeric),
+        active = true;
+  update public.inventory inv
+    set quantity = greatest(0, initial_stock.value::integer)
+    from public.catalog catalog_row,
+      lateral jsonb_array_elements(catalog_row.data->'variants') variant,
+      lateral jsonb_each_text(variant->'stock') initial_stock
+    where inv.product_id = catalog_row.id
+      and inv.color = variant->>'color'
+      and inv.size = initial_stock.key;
+  get diagnostics n_variants = row_count;
+  return jsonb_build_object('orders_deleted', n_orders, 'variants_reset', n_variants);
+end;
+$$;
+revoke all on function public.reset_offgrid_demo() from public, anon, authenticated;
+grant execute on function public.reset_offgrid_demo() to service_role;
