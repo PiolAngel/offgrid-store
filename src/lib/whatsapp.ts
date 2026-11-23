@@ -26,7 +26,7 @@ export function buildProductInquiryMessage(product: {
   size?: string;
 }): string {
   return [
-    "Hola OFFGRID, quiero consultar por este producto:",
+    "DEMO OFFGRID — consulta ficticia. No es una compra real:",
     `Producto: ${product.name}`,
     `Precio: ${formatPrice(product.price)}`,
     product.color ? `Color: ${product.color}` : "",
@@ -47,7 +47,7 @@ export function buildCartMessage(
   );
 
   return [
-    "Hola OFFGRID, quiero realizar este pedido:",
+    "DEMO OFFGRID — pedido ficticio. No realizar cobros ni entregas:",
     "",
     ...lines,
     "",
@@ -61,6 +61,6 @@ export function buildCustomerStatusMessage(order: Order): string {
   return [
     `Hola ${order.customer.name}, te escribimos de OFFGRID.`,
     `Tu pedido ${order.code} está ahora: ${order.status}.`,
-    "Gracias por comprar con nosotros.",
+    "Mensaje de demostración: no se efectuó ninguna compra.",
   ].join("\n");
 }
