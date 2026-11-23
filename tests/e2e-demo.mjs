@@ -100,6 +100,8 @@ async function run() {
       await page.getByRole("button",{name:/CONFIRMAR PEDIDO/i}).click();
       await page.getByText("¡Simulación completada!").waitFor();
       await page.getByText("OFF-DEMO-0001").waitFor();
+      await page.evaluate(() => window.scrollTo(0,0));
+      await page.waitForTimeout(250);
       assert.equal(orderCount,1,`Pedido duplicado en ${label}`);
       await page.screenshot({path:`test-artifacts/${label}-checkout.png`,fullPage:true});
 
