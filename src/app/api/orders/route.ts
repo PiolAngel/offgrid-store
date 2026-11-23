@@ -29,7 +29,7 @@ interface StoredOrder {
 
 
 export async function POST(request: Request) {
-  if (!configured()) return NextResponse.json({ error: "La tienda aún no está habilitada para pedidos reales" }, { status: 503 });
+  if (!configured()) return NextResponse.json({ error: "El registro de pedidos de demostración no está disponible" }, { status: 503 });
   try {
     const input = (await request.json()) as SubmittedOrder | null;
     if (!input || typeof input !== "object") return NextResponse.json({ error: "Datos inválidos" }, { status: 400 });

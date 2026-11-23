@@ -408,7 +408,7 @@ export default function CheckoutFlow() {
             href="/"
             className="mt-3 flex min-h-14 items-center justify-center border border-[#211f1c] text-xs tracking-[0.15em]"
           >
-            SEGUIR COMPRANDO
+            SEGUIR EXPLORANDO
           </Link>
           <p className="mt-3 text-center text-[11px] text-[#89837c]">
             WhatsApp abrirá un mensaje preparado. Vos decidís si lo enviás.
@@ -459,7 +459,7 @@ export default function CheckoutFlow() {
             <div>
               <h1 className="font-serif text-3xl sm:text-4xl">Tus datos</h1>
               <p className="mt-2 text-sm text-[#77716a]">
-                Los usamos para coordinar la entrega de tu pedido.
+                Usá datos ficticios para explorar el flujo de compra de esta demo.
               </p>
               <div className="mt-7 space-y-5">
                 <Field
@@ -510,14 +510,14 @@ export default function CheckoutFlow() {
                 <OptionCard
                   selected={draft.deliveryMethod === "delivery"}
                   title="Delivery"
-                  description="Lo llevamos a la dirección indicada."
+                  description="Simulá un envío a una dirección inventada."
                   price={freeShipping ? "GRATIS" : formatPrice(DELIVERY_COST)}
                   onClick={() => update("deliveryMethod", "delivery")}
                 />
                 <OptionCard
                   selected={draft.deliveryMethod === "pickup"}
                   title="Retiro en local"
-                  description="Coordinaremos el punto de retiro por WhatsApp."
+                  description="Simulá el retiro en un local ficticio."
                   price="GRATIS"
                   onClick={() => update("deliveryMethod", "pickup")}
                 />
@@ -545,19 +545,19 @@ export default function CheckoutFlow() {
             <div>
               <h1 className="font-serif text-3xl sm:text-4xl">Método de pago</h1>
               <p className="mt-3 bg-[#eee9df] px-4 py-3 text-xs leading-relaxed text-[#5e5a52]">
-                No se cobra online. Coordinaremos el pago por WhatsApp al confirmar tu pedido.
+                Métodos de pago ficticios. No se realiza ningún cobro ni transferencia.
               </p>
               <div className="mt-6 space-y-3">
                 <OptionCard
                   selected={draft.paymentMethod === "transfer"}
                   title="Transferencia"
-                  description="Coordinaremos los datos bancarios por WhatsApp antes del pago."
+                  description="Opción de ejemplo: no ingreses ni transfieras datos bancarios."
                   onClick={() => update("paymentMethod", "transfer")}
                 />
                 <OptionCard
                   selected={draft.paymentMethod === "cash"}
                   title="Efectivo"
-                  description="Pago en efectivo al recibir el pedido."
+                  description="Opción de ejemplo: no se realiza cobro ni entrega."
                   onClick={() => update("paymentMethod", "cash")}
                 />
               </div>
@@ -573,7 +573,7 @@ export default function CheckoutFlow() {
             <div>
               <h1 className="font-serif text-3xl sm:text-4xl">Confirmá tu pedido</h1>
               <p className="mt-2 text-sm text-[#77716a]">
-                Revisá tus datos antes de registrar el pedido.
+                Revisá los datos inventados antes de registrar el pedido ficticio.
               </p>
               <div className="mt-7 space-y-4 text-sm">
                 <div className="border border-[#d9d2c7] p-4">

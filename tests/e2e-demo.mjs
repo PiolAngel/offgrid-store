@@ -39,6 +39,10 @@ async function waitForServer() {
 
 async function run() {
   await waitForServer();
+  // Un visitante sin sesión no debe leer pedidos ni restablecer la base ficticia.
+  assert.equal((await fetch(URL + "/api/admin/data")).status, 401);
+  assert.equal((await fetch(URL + "/api/admin/reset", { method: "POST" })).status, 401);
+  console.log("E2E seguridad: administración rechaza accesos anónimos");
   const browser = await chromium.launch({headless:true});
   await mkdir("test-artifacts", {recursive:true});
   try {
@@ -119,6 +123,54 @@ async function run() {
       await page.close();
       process.stdout.write(`E2E ${label}: compra demo, carrito, checkout y confirmación OK\\n`);
     }
+
+    // Segunda ruta: delivery y transferencia, con validación de dirección
+    // y un error de precio/stock sin borrar el carrito del visitante.
+    const delivery = await browser.newPage({ viewport: { width: 1365, height: 900 } });
+    delivery.setDefaultTimeout(12000);
+    let rejectedOrders = 0;
+    await delivery.route("**/api/catalog", route => route.fulfill({
+      status: 200, contentType: "application/json",
+      body: JSON.stringify({ configured: true, products: [{ ...sample, price: 189000 }] })
+    }));
+    await delivery.route("**/api/orders", route => {
+      const request = route.request().postDataJSON();
+      assert.equal(request.deliveryMethod, "delivery");
+      assert.equal(request.paymentMethod, "transfer");
+      assert.equal(request.expectedSubtotal, 189000);
+      assert.equal(request.expectedDeliveryCost, 15000);
+      rejectedOrders++;
+      return route.fulfill({
+        status: 409, contentType: "application/json",
+        body: JSON.stringify({ error: "El stock o precio cambió. Revisá tu carrito e intentá nuevamente." })
+      });
+    });
+    await delivery.goto(URL, { waitUntil: "domcontentloaded" });
+    await delivery.getByRole("button", { name: /Ver detalles de White Sneakers/i }).first().click();
+    const deliveryProduct = delivery.getByRole("dialog").first();
+    await deliveryProduct.getByRole("button", { name: "Blanco", exact: true }).click();
+    await deliveryProduct.getByRole("button", { name: /38, pocas unidades/i }).click();
+    await deliveryProduct.getByRole("button", { name: /AGREGAR AL CARRITO/ }).click();
+    await delivery.getByRole("dialog", { name: "Tu carrito" }).waitFor();
+    await delivery.getByRole("button", { name: "FINALIZAR COMPRA" }).click();
+    await delivery.waitForURL("**/checkout");
+    await delivery.getByText("Usá datos ficticios para explorar el flujo de compra de esta demo.").waitFor();
+    await delivery.getByRole("button", { name: "Usar datos de ejemplo" }).click();
+    await delivery.getByRole("button", { name: "CONTINUAR" }).click();
+    const address = delivery.locator('input[placeholder="Calle, número, barrio, ciudad"]');
+    await address.fill("");
+    await delivery.getByRole("button", { name: "CONTINUAR" }).click();
+    await delivery.getByText("Ingresá tu dirección o una referencia.").waitFor();
+    await address.fill("Calle Ficticia 123, Asunción");
+    await delivery.getByRole("button", { name: "CONTINUAR" }).click();
+    await delivery.getByRole("button", { name: /Transferencia/i }).click();
+    await delivery.getByRole("button", { name: "CONTINUAR" }).click();
+    await delivery.getByRole("button", { name: /CONFIRMAR PEDIDO/i }).click();
+    await delivery.getByText("El stock o precio cambió. Revisá tu carrito e intentá nuevamente.").waitFor();
+    assert.equal(rejectedOrders, 1);
+    await delivery.screenshot({ path: "test-artifacts/delivery-error.png", fullPage: true });
+    await delivery.close();
+    console.log("E2E delivery: dirección requerida, envío pagado y rechazo seguro OK");
 
     // Administración: sesión, inventario actualizado y reset de datos ficticios.
     const admin = await browser.newPage({viewport:{width:1365,height:900}});
