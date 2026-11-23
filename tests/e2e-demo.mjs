@@ -117,6 +117,60 @@ async function run() {
       await page.close();
       process.stdout.write(`E2E ${label}: compra demo, carrito, checkout y confirmación OK\\n`);
     }
+
+    // Administración: sesión, inventario actualizado y reset de datos ficticios.
+    const admin = await browser.newPage({viewport:{width:1365,height:900}});
+    admin.setDefaultTimeout(12000);
+    let savedStock = 1;
+    let saveCount = 0;
+    let resetCount = 0;
+
+    await admin.route("**/api/admin/session",route=>route.fulfill({
+      status:200,contentType:"application/json",
+      body:JSON.stringify({authenticated:true,configured:true})
+    }));
+    await admin.route("**/api/admin/data",route=>{
+      if(route.request().method()==="PATCH"){
+        const data=route.request().postDataJSON();
+        assert.equal(data.kind,"stock");
+        assert.equal(data.id,"1");
+        assert.equal(data.size,"38");
+        assert.equal(data.color,"Blanco");
+        savedStock=data.value;
+        saveCount++;
+        return route.fulfill({status:200,contentType:"application/json",body:'{"ok":true}'});
+      }
+      return route.fulfill({status:200,contentType:"application/json",body:JSON.stringify({
+        orders:[],
+        catalog:[{id:"1",data:{name:"White Sneakers"},price:649000,active:true}],
+        inventory:[{product_id:"1",color:"Blanco",size:"38",quantity:savedStock}]
+      })});
+    });
+    await admin.route("**/api/admin/reset",route=>{
+      assert.equal(route.request().postDataJSON().confirmation,"RESTABLECER DEMO");
+      resetCount++;
+      savedStock=0;
+      return route.fulfill({status:200,contentType:"application/json",body:'{"ok":true,"orders_deleted":0,"variants_reset":1}'});
+    });
+
+    await admin.goto(URL+"/admin",{waitUntil:"domcontentloaded"});
+    await admin.getByRole("heading",{name:"Panel administrativo"}).waitFor();
+    await admin.getByRole("button",{name:"Productos y stock"}).click();
+    const stockForm=admin.locator("form").filter({hasText:"Blanco · 38"});
+    await stockForm.getByRole("spinbutton",{name:"Cantidad en stock"}).fill("3");
+    await stockForm.getByRole("button",{name:"Guardar"}).click();
+    await admin.getByText(/Cambio guardado/).waitFor();
+    assert.equal(saveCount,1);
+    assert.equal(savedStock,3);
+
+    admin.once("dialog",dialog=>dialog.accept("RESTABLECER DEMO"));
+    await admin.getByRole("button",{name:"Restablecer demo"}).click();
+    await admin.getByText(/Demo restaurada/).waitFor();
+    assert.equal(resetCount,1);
+    await admin.screenshot({path:"test-artifacts/admin-demo.png",fullPage:true});
+    await admin.close();
+    console.log("E2E administración: stock y restablecimiento demo OK");
+
   } finally {await browser.close();}
 }
 
