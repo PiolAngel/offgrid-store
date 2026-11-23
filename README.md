@@ -1,14 +1,23 @@
-# OFFGRID — tienda streetwear (BETA)
+# OFFGRID — BETA comercial
 
-Tienda en **Next.js 16**, React 19 y Tailwind 4, desplegada en Vercel. Backend de pedidos e inventario en Supabase PostgreSQL, con checkout que registra pedidos en el servidor y continuación por WhatsApp. No procesa pagos online.
+Demostración profesional de una tienda de streetwear para el catálogo comercial de una agencia web en Paraguay.
 
-## Rutas
+**OFFGRID no vende mercadería real.** Los productos, precios, inventario y pedidos son ficticios. No se cobran pagos ni se gestionan entregas reales.
 
-- `/`: catálogo, filtros, productos y carrito persistente.
-- `/checkout`: datos, modalidad de entrega, pago y confirmación de pedido.
-- `/admin`: panel privado de pedidos, estados, precios, publicación y stock por variante.
-- `/api/catalog`: consulta productos y stock centralizados. Si Supabase falla, se pausan compras para evitar vender cantidades ficticias.
-- `/api/orders`: crea pedidos y descuenta stock transaccionalmente, con comprobación de precios y prevención de duplicados.
+## Stack
+
+Next.js 16, React 19, Tailwind CSS 4, Vercel y Supabase PostgreSQL.
+
+## Funcionalidades
+
+- Catálogo responsive con categorías, destacados, filtros, galerías y variantes por color/talle.
+- Carrito persistente y sincronizado con stock y precios de Supabase.
+- Checkout de **demostración** de cuatro etapas, con datos ficticios predefinidos, validaciones y confirmación.
+- Pedidos ficticios guardados en Supabase, descuento de stock transaccional, control de precio e idempotencia.
+- Panel privado en `/admin`: pedidos, estados, precios, productos y existencias.
+- **Restablecer demo** en el panel: limpia pedidos ficticios, restaura precios y stock originales y permite repetir las presentaciones.
+- Aviso visible de demostración y `noindex` para evitar confundir la BETA con un negocio real.
+- WhatsApp abre un borrador de mensaje sin un destinatario real; solo se habilita chat directo al configurar `NEXT_PUBLIC_OFFGRID_WHATSAPP`.
 
 ## Desarrollo
 
@@ -19,32 +28,30 @@ npm run lint
 npm run build
 ```
 
-Las variables de entorno se configuran en Vercel (o en `.env.local` para desarrollo; **nunca subir archivos .env a Git**):
+### Variables de entorno
 
-| Variable | Alcance | Uso |
+| Variable | Exposición | Uso |
 |---|---|---|
-| `SUPABASE_URL` | Solo servidor | Dirección HTTPS del proyecto Supabase |
-| `SUPABASE_SECRET_KEY` | Solo servidor | Clave secreta `sb_secret_...` para consultar y modificar datos |
-| `ADMIN_PASSWORD` | Solo servidor | Contraseña larga y exclusiva del administrador |
-| `ADMIN_SESSION_SECRET` | Solo servidor | Firma HMAC de sesiones, al menos 32 caracteres |
-| `NEXT_PUBLIC_OFFGRID_WHATSAPP` | Público / opcional | Número comercial paraguayo sin signos, p. ej. `5959XXXXXXXX`; verificar antes de publicar |
+| `SUPABASE_URL` | Solo servidor | URL del proyecto de prueba |
+| `SUPABASE_SECRET_KEY` | Solo servidor | Clave secreta de Supabase |
+| `ADMIN_PASSWORD` | Solo servidor | Contraseña de administración |
+| `ADMIN_SESSION_SECRET` | Solo servidor | Firma de sesión de al menos 32 caracteres |
+| `NEXT_PUBLIC_OFFGRID_WHATSAPP` | Opcional / cliente | Teléfono comercial solo para un eventual uso real |
 
-No exponer claves de servicio en variables `NEXT_PUBLIC_`, código cliente, repositorio ni chats.
+No subir secretos a Git ni ponerlos en variables `NEXT_PUBLIC_`.
 
-## Datos
+## Verificaciones
 
-El esquema de una instalación nueva está en `supabase/schema.sql`. Las migraciones aplicadas al proyecto BETA original se describen en `OFFGRID-SETUP.md`.
+- `npm run build`: ejecuta ESLint y la compilación TypeScript/Next.js.
+- `.github/workflows/offgrid-quality.yml`: calidad automática de cada PR.
+- `.github/workflows/offgrid-e2e.yml`: Chromium y pruebas de compra en desktop/móvil, carrito, confirmación y panel administrativo.
+- `tests/e2e-demo.mjs`: simula respuestas de API para probar la interfaz sin alterar Supabase.
+- `supabase/tests/order-smoke.sql`: prueba las transacciones reales de Supabase con `ROLLBACK`, sin guardar pedidos.
+- `supabase/schema.sql`: estructura de una instalación nueva (no ejecutar otra vez en el proyecto existente).
+- `OFFGRID-SETUP.md`: entorno, estado de despliegue, procedimientos y límites de la demo.
 
-**Atención:** El proyecto Supabase de OFFGRID ya fue inicializado con datos de **demostración**. No repetir la inicialización; actualizar las cantidades mediante `/admin` después de hacer inventario físico. El sistema **descuenta** unidades al registrar el pedido y las **repone** al cancelarlo desde administración.
+## Uso comercial
 
-## Antes de aceptar pedidos reales
+Se comparte el enlace público de la demo. Para presentar el flujo completo se puede usar **«Usar datos de ejemplo»** en el checkout y **«Restablecer demo»** desde el panel entre presentaciones.
 
-1. Confirmar teléfono de WhatsApp, costos y zonas de envío, lugar de retiro, formas de pago y políticas de atención.
-2. Sustituir los valores DEMO de inventario y precios por existencias verdaderas, y ocultar productos no disponibles.
-3. Verificar checkout real desde dos navegadores, cambios de stock y precios en admin y navegación móvil.
-4. Comprobar despliegue de producción y acceso público, sin confundirlo con un enlace temporal de Preview.
-5. Establecer una política de privacidad y un proceso operativo de atención, cancelación y respaldo de pedidos.
-
-**No fusionar a `main` ni prometer entregas reales antes de completar estas verificaciones.**
-
-El desarrollo y su estado de validación se mantienen en la PR de GitHub y la guía `OFFGRID-SETUP.md`.
+No es necesario verificar inventario físico. Nunca presentar pedidos ni pagos simulados como operaciones comerciales reales.
