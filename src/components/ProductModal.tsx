@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import type { Product, ProductVariant } from "@/types";
 import { useCart, MAX_QUANTITY } from "@/context/CartContext";
+import { useStore } from "@/context/StoreContext";
 import { formatPrice } from "@/lib/pricing";
 import {
   buildProductInquiryMessage,
@@ -41,7 +43,7 @@ function getSizeStock(
 ): number | undefined {
   const value = variant?.stock?.[sizeOption];
 
-  if (typeof value !== "number" || !Number.isFinite(value)) return undefined;
+  if (typeof value !== "number" || !Number.isFinite(value)) return 0;
 
   return Math.max(0, Math.floor(value));
 }
@@ -59,6 +61,7 @@ function ProductModalContent({
   onClose,
 }: ProductModalProps) {
   const { addItem, items } = useCart();
+  const { catalogReady } = useStore();
   const [size, setSize] = useState("");
   const [color, setColor] = useState("");
   const [quantity, setQuantity] = useState(1);
@@ -117,7 +120,7 @@ function ProductModalContent({
   // Sin stock definido se conserva el comportamiento anterior (tope: MAX_QUANTITY).
   const availableUnits =
     selectedStock === undefined
-      ? MAX_QUANTITY
+      ? 0
       : Math.max(0, selectedStock - unitsInCart);
 
   const maxQuantity = Math.max(1, Math.min(MAX_QUANTITY, availableUnits));
@@ -134,7 +137,7 @@ function ProductModalContent({
 
   // No se puede agregar hasta tener un color y un talle válidos.
   const addDisabled =
-    selectedVariant === undefined || size === "" || allSoldOut || outOfUnits;
+    !catalogReady || selectedVariant === undefined || size === "" || allSoldOut || outOfUnits;
 
   const lowStockLabel =
     selectedStock !== undefined && selectedStock >= 1 && selectedStock <= 9
@@ -143,7 +146,9 @@ function ProductModalContent({
         : `Últimas ${selectedStock} unidades`
       : null;
 
-  const addButtonLabel = !selectedVariant
+  const addButtonLabel = !catalogReady
+    ? "COMPROBANDO DISPONIBILIDAD"
+    : !selectedVariant
     ? "ELEGÍ UN COLOR"
     : allSoldOut
       ? "AGOTADO"
@@ -209,11 +214,13 @@ function ProductModalContent({
     if (!product || !selectedVariant || !size || addDisabled) return;
     if (!sizes.includes(size) || isSizeSoldOut(selectedVariant, size)) return;
 
+    let added = 0;
     for (let i = 0; i < safeQuantity; i++) {
-      addItem(product, size, selectedVariant.color);
+      if (addItem(product, size, selectedVariant.color)) added++;
+      else break;
     }
 
-    onClose();
+    if (added > 0) onClose();
   }
 
   return (
@@ -242,9 +249,13 @@ function ProductModalContent({
           <div className="flex flex-col" style={{ backgroundColor }}>
             <div className="flex min-h-[280px] items-center justify-center md:min-h-[520px]">
               {mainImage ? (
-                <img
+                <Image
                   src={mainImage}
                   alt={`${product.name} — vista ${selectedImage + 1}`}
+                  width={900}
+                  height={1100}
+                  sizes="(min-width: 768px) 50vw, 100vw"
+                  loading="eager"
                   className="h-full max-h-[520px] min-h-[280px] w-full object-cover"
                 />
               ) : (
@@ -280,9 +291,12 @@ function ProductModalContent({
                         : "border-transparent opacity-60 hover:opacity-100"
                     }`}
                   >
-                    <img
+                    <Image
                       src={image}
                       alt={`${product.name} — miniatura ${index + 1}`}
+                      width={80}
+                      height={80}
+                      sizes="80px"
                       className="h-full w-full object-cover"
                     />
                   </button>

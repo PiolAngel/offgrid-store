@@ -1,15 +1,16 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { buildWhatsAppUrl } from "@/lib/whatsapp";
 
 export default function WhatsAppButton() {
   const pathname = usePathname();
 
-  if (pathname.startsWith("/admin")) return null;
+  if (pathname.startsWith("/admin") || pathname.startsWith("/checkout")) return null;
 
   return (
     <a
-      href="https://wa.me/595981951940"
+      href={buildWhatsAppUrl("")}
       target="_blank"
       rel="noopener noreferrer"
       aria-label="Contactar con OFFGRID por WhatsApp"

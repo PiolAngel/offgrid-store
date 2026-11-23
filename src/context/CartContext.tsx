@@ -10,6 +10,9 @@ import {
   type ReactNode,
 } from "react";
 import type { CartItem, Product } from "@/types";
+import { useEffect } from "react";
+import { readJSON, writeJSON } from "@/lib/storage";
+import { useStore } from "@/context/StoreContext";
 
 export const MAX_QUANTITY = 10;
 
@@ -39,7 +42,8 @@ export function getMaxQuantity(
 ): number {
   const stock = getVariantStock(product, size, color);
 
-  return stock === undefined ? MAX_QUANTITY : Math.min(MAX_QUANTITY, stock);
+  // Nunca suponer disponibilidad cuando no hay un stock válido.
+  return stock === undefined ? 0 : Math.min(MAX_QUANTITY, stock);
 }
 
 interface CartContextValue {
@@ -59,22 +63,62 @@ interface CartContextValue {
 const CartContext = createContext<CartContextValue | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
+  const { products: currentProducts, catalogReady } = useStore();
   const [items, setItems] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
 
   // Copia síncrona del carrito. Permite comprobar el stock con los datos más recientes,
   // incluso cuando se llama a addItem varias veces seguidas (por ejemplo, cantidad 3 desde el modal).
   const itemsRef = useRef<CartItem[]>([]);
+
+  useEffect(() => {
+    let mounted = true;
+    const saved = readJSON<CartItem[]>("offgrid:cart:v1");
+    const safe = Array.isArray(saved)
+      ? saved.filter((item) => item && item.product && typeof item.id === "string" && Number.isInteger(item.quantity) && item.quantity > 0).slice(0, 50)
+      : [];
+
+    // La restauración se ejecuta después del montaje, sin actualizar estado durante el efecto.
+    queueMicrotask(() => {
+      if (!mounted) return;
+      itemsRef.current = safe;
+      setItems(safe);
+      setHydrated(true);
+    });
+    return () => { mounted = false; };
+  }, []);
+
+  useEffect(() => {
+    if (hydrated) writeJSON("offgrid:cart:v1", items);
+  }, [hydrated, items]);
 
   const commitItems = useCallback((nextItems: CartItem[]) => {
     itemsRef.current = nextItems;
     setItems(nextItems);
   }, []);
 
+  useEffect(() => {
+    if (!hydrated || !catalogReady) return;
+    const next = itemsRef.current.flatMap((item) => {
+      const current = currentProducts.find((product) => product.id === item.product.id);
+      if (!current) return [];
+      const max = getMaxQuantity(current, item.size, item.color);
+      if (max < 1) return [];
+      return [{ ...item, product: current, quantity: Math.min(item.quantity, max) }];
+    });
+    const changed = next.length !== itemsRef.current.length ||
+      next.some((item, index) => item.product !== itemsRef.current[index].product || item.quantity !== itemsRef.current[index].quantity);
+    if (changed) commitItems(next);
+  }, [currentProducts, hydrated, catalogReady, commitItems]);
+
   const addItem = useCallback(
     (product: Product, size = "Único", color = "Único"): boolean => {
-      const itemId = `${product.id}::${size}::${color}`;
-      const maxQuantity = getMaxQuantity(product, size, color);
+      if (!catalogReady) return false;
+      const currentProduct = currentProducts.find((entry) => entry.id === product.id);
+      if (!currentProduct) return false;
+      const itemId = `${currentProduct.id}::${size}::${color}`;
+      const maxQuantity = getMaxQuantity(currentProduct, size, color);
       const currentItems = itemsRef.current;
       const existingItem = currentItems.find((item) => item.id === itemId);
       const currentQuantity = existingItem?.quantity ?? 0;
@@ -89,7 +133,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         commitItems(
           currentItems.map((item) =>
             item.id === itemId
-              ? { ...item, quantity: currentQuantity + 1 }
+              ? { ...item, product: currentProduct, quantity: currentQuantity + 1 }
               : item,
           ),
         );
@@ -98,7 +142,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           ...currentItems,
           {
             id: itemId,
-            product,
+            product: currentProduct,
             quantity: 1,
             size,
             color,
@@ -109,7 +153,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       setIsCartOpen(true);
       return true;
     },
-    [commitItems],
+    [commitItems, catalogReady, currentProducts],
   );
 
   const setQuantity = useCallback(

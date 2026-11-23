@@ -3,23 +3,18 @@
 
 import ProductCard from "@/components/ProductCard";
 import { useStore } from "@/context/StoreContext";
-import type { Product } from "@/types";
 
 /** Máximo de productos que se muestran en esta sección. */
 const MAX_FEATURED = 8;
 
-interface FeaturedProductsProps {
-  products: Product[];
-}
+export default function FeaturedProducts() {
+  const { isProductActive, products: currentProducts, catalogReady } = useStore();
 
-export default function FeaturedProducts({ products }: FeaturedProductsProps) {
-  const { isProductActive } = useStore();
-
-  const featured = products
+  const featured = currentProducts
     .filter((product) => product.featured && isProductActive(product.id))
     .slice(0, MAX_FEATURED);
 
-  if (featured.length === 0) return null;
+  if (!catalogReady || featured.length === 0) return null;
 
   return (
     <section

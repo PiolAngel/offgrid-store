@@ -1,36 +1,57 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# OFFGRID — BETA comercial
 
-## Getting Started
+Demostración profesional de una tienda de streetwear para el catálogo comercial de una agencia web en Paraguay.
 
-First, run the development server:
+**OFFGRID no vende mercadería real.** Los productos, precios, inventario y pedidos son ficticios. No se cobran pagos ni se gestionan entregas reales.
+
+## Stack
+
+Next.js 16, React 19, Tailwind CSS 4, Vercel y Supabase PostgreSQL.
+
+## Funcionalidades
+
+- Catálogo responsive con categorías, destacados, filtros, galerías y variantes por color/talle.
+- Carrito persistente y sincronizado con stock y precios de Supabase.
+- Checkout de **demostración** de cuatro etapas, con datos ficticios predefinidos, validaciones y confirmación.
+- Pedidos ficticios guardados en Supabase, descuento de stock transaccional, control de precio e idempotencia.
+- Panel privado en `/admin`: pedidos, estados, precios, productos y existencias.
+- **Restablecer demo** en el panel: limpia pedidos ficticios, restaura precios y stock originales y permite repetir las presentaciones.
+- Aviso visible de demostración y `noindex` para evitar confundir la BETA con un negocio real.
+- WhatsApp abre un borrador de mensaje sin un destinatario real; solo se habilita chat directo al configurar `NEXT_PUBLIC_OFFGRID_WHATSAPP`.
+
+## Desarrollo
 
 ```bash
+npm ci
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run lint
+npm run build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Variables de entorno
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Variable | Exposición | Uso |
+|---|---|---|
+| `SUPABASE_URL` | Solo servidor | URL del proyecto de prueba |
+| `SUPABASE_SECRET_KEY` | Solo servidor | Clave secreta de Supabase |
+| `ADMIN_PASSWORD` | Solo servidor | Contraseña de administración |
+| `ADMIN_SESSION_SECRET` | Solo servidor | Firma de sesión de al menos 32 caracteres |
+| `NEXT_PUBLIC_OFFGRID_WHATSAPP` | Opcional / cliente | Teléfono comercial solo para un eventual uso real |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+No subir secretos a Git ni ponerlos en variables `NEXT_PUBLIC_`.
 
-## Learn More
+## Verificaciones
 
-To learn more about Next.js, take a look at the following resources:
+- `npm run build`: ejecuta ESLint y la compilación TypeScript/Next.js.
+- `.github/workflows/offgrid-quality.yml`: calidad automática de cada PR.
+- `.github/workflows/offgrid-e2e.yml`: Chromium y pruebas de compra en desktop/móvil, carrito, confirmación y panel administrativo.
+- `tests/e2e-demo.mjs`: simula respuestas de API para probar la interfaz sin alterar Supabase.
+- `supabase/tests/order-smoke.sql`: prueba las transacciones reales de Supabase con `ROLLBACK`, sin guardar pedidos.
+- `supabase/schema.sql`: estructura de una instalación nueva (no ejecutar otra vez en el proyecto existente).
+- `OFFGRID-SETUP.md`: entorno, estado de despliegue, procedimientos y límites de la demo.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Uso comercial
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Se comparte el enlace público de la demo. Para presentar el flujo completo se puede usar **«Usar datos de ejemplo»** en el checkout y **«Restablecer demo»** desde el panel entre presentaciones.
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+No es necesario verificar inventario físico. Nunca presentar pedidos ni pagos simulados como operaciones comerciales reales.

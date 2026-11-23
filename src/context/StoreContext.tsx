@@ -1,248 +1,114 @@
 "use client";
 
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from "react";
-import { products as baseProducts } from "@/data/products";
-import { readJSON, writeJSON } from "@/lib/storage";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { Order, Product } from "@/types";
-
-const STORE_STORAGE_KEY = "offgrid:store:v1";
-
-interface StoreData {
-  priceOverrides: Record<string, number>;
-  stockOverrides: Record<string, Record<string, Record<string, number>>>;
-  inactiveProducts: string[];
-  orders: Order[];
-  nextOrderNumber: number;
-}
-
-const INITIAL_DATA: StoreData = {
-  priceOverrides: {},
-  stockOverrides: {},
-  inactiveProducts: [],
-  orders: [],
-  nextOrderNumber: 1,
-};
 
 interface StoreContextValue {
   products: Product[];
+  catalogReady: boolean;
+  catalogError: boolean;
   orders: Order[];
   getProduct: (id: string) => Product | undefined;
   isProductActive: (id: string) => boolean;
-  createOrder: (order: Omit<Order, "id" | "code" | "createdAt">) => Order;
-  updateOrderStatus: (orderId: string, status: Order["status"]) => void;
-  updatePaymentStatus: (orderId: string, status: Order["paymentStatus"]) => void;
-  updateProductPrice: (productId: string, price: number) => void;
-  updateVariantStock: (productId: string, color: string, size: string, stock: number) => void;
-  setProductActive: (productId: string, active: boolean) => void;
-  resetStore: () => void;
+  createOrder: (order: Omit<Order, "id" | "code" | "createdAt"> & { requestId: string }) => Promise<Order>;
+  refresh: () => Promise<void>;
 }
 
 const StoreContext = createContext<StoreContextValue | undefined>(undefined);
 
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const [data, setData] = useState<StoreData>(INITIAL_DATA);
-  const [ready, setReady] = useState(false);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [activeIds, setActiveIds] = useState<string[]>([]);
+  const [catalogReady, setCatalogReady] = useState(false);
+  const [catalogError, setCatalogError] = useState(false);
+  const latestRefreshId = useRef(0);
 
-  useEffect(() => {
-    const stored = readJSON<StoreData>(STORE_STORAGE_KEY);
-    if (stored) setData({ ...INITIAL_DATA, ...stored });
-    setReady(true);
+  const refresh = useCallback(async () => {
+    const refreshId = ++latestRefreshId.current;
+    try {
+      const response = await fetch("/api/catalog", { cache: "no-store" });
+      if (!response.ok) throw new Error("Catálogo no disponible");
+      const data = await response.json();
+      if (refreshId !== latestRefreshId.current) return;
+      if (data.configured !== true || !Array.isArray(data.products)) throw new Error("Tienda aún no habilitada");
+      setProducts(data.products);
+      setActiveIds(data.products.map((p: Product) => p.id));
+      setCatalogReady(true);
+      setCatalogError(false);
+    } catch {
+      if (refreshId !== latestRefreshId.current) return;
+      setCatalogReady(false);
+      setCatalogError(true);
+    }
   }, []);
 
   useEffect(() => {
-    if (ready) writeJSON(STORE_STORAGE_KEY, data);
-  }, [data, ready]);
+    let mounted = true;
+    queueMicrotask(() => { if (mounted) void refresh(); });
 
-  const productsWithOverrides = useMemo(
-    () =>
-      baseProducts.map((product) => {
-        const stockByColor = data.stockOverrides[product.id] ?? {};
+    // Revalidar al regresar desde el panel, otra pestaña o al recuperar la ventana.
+    const onFocus = () => { void refresh(); };
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void refresh();
+    };
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === "offgrid:catalog:refresh") void refresh();
+    };
+    const onCatalogChanged = () => { void refresh(); };
+    const timer = window.setInterval(() => {
+      if (!document.hidden) void refresh();
+    }, 30_000);
 
-        return {
-          ...product,
-          price: data.priceOverrides[product.id] ?? product.price,
-          variants: product.variants?.map((variant) => ({
-            ...variant,
-            stock: {
-              ...variant.stock,
-              ...(stockByColor[variant.color] ?? {}),
-            },
-          })),
-        };
+    window.addEventListener("focus", onFocus);
+    window.addEventListener("pageshow", onFocus);
+    window.addEventListener("storage", onStorage);
+    window.addEventListener("offgrid:catalog-changed", onCatalogChanged);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      mounted = false;
+      clearInterval(timer);
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener("pageshow", onFocus);
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("offgrid:catalog-changed", onCatalogChanged);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [refresh]);
+
+  const createOrder = useCallback(async (order: Omit<Order, "id" | "code" | "createdAt"> & { requestId: string }): Promise<Order> => {
+    if (!catalogReady) throw new Error("El catálogo está temporalmente indisponible. Intentá nuevamente.");
+    const response = await fetch("/api/orders", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        requestId: order.requestId,
+        customer: order.customer,
+        items: order.items,
+        deliveryMethod: order.deliveryMethod,
+        paymentMethod: order.paymentMethod,
+        expectedSubtotal: order.subtotal,
+        expectedDeliveryCost: order.deliveryCost,
       }),
-    [data.priceOverrides, data.stockOverrides],
-  );
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.order) {
+      await refresh();
+      throw new Error(payload.error || "No se pudo registrar el pedido");
+    }
+    await refresh();
+    return payload.order as Order;
+  }, [refresh, catalogReady]);
 
-  const getProduct = useCallback(
-    (id: string) => productsWithOverrides.find((product) => product.id === id),
-    [productsWithOverrides],
-  );
-
-  const isProductActive = useCallback(
-    (id: string) => !data.inactiveProducts.includes(id),
-    [data.inactiveProducts],
-  );
-
-  const createOrder = useCallback(
-    (orderData: Omit<Order, "id" | "code" | "createdAt">) => {
-      const orderNumber = data.nextOrderNumber;
-      const order: Order = {
-        ...orderData,
-        id: `order-${orderNumber}`,
-        code: `OFF-${String(orderNumber).padStart(4, "0")}`,
-        createdAt: new Date().toISOString(),
-      };
-
-      setData((current) => {
-        const nextStock = { ...current.stockOverrides };
-
-        for (const item of order.items) {
-          const product = baseProducts.find((entry) => entry.id === item.productId);
-          if (!product) continue;
-
-          const originalVariant = product.variants?.find(
-            (variant) => variant.color === item.color,
-          );
-          const originalStock = originalVariant?.stock?.[item.size] ?? 0;
-          const currentStock =
-            nextStock[item.productId]?.[item.color]?.[item.size] ?? originalStock;
-
-          nextStock[item.productId] = {
-            ...nextStock[item.productId],
-            [item.color]: {
-              ...nextStock[item.productId]?.[item.color],
-              [item.size]: Math.max(0, currentStock - item.quantity),
-            },
-          };
-        }
-
-        return {
-          ...current,
-          stockOverrides: nextStock,
-          orders: [order, ...current.orders],
-          nextOrderNumber: orderNumber + 1,
-        };
-      });
-
-      return order;
-    },
-    [data.nextOrderNumber],
-  );
-
-  const updateOrderStatus = useCallback(
-    (orderId: string, status: Order["status"]) => {
-      setData((current) => ({
-        ...current,
-        orders: current.orders.map((order) =>
-          order.id === orderId ? { ...order, status } : order,
-        ),
-      }));
-    },
-    [],
-  );
-
-  const updatePaymentStatus = useCallback(
-    (orderId: string, paymentStatus: Order["paymentStatus"]) => {
-      setData((current) => ({
-        ...current,
-        orders: current.orders.map((order) =>
-          order.id === orderId ? { ...order, paymentStatus } : order,
-        ),
-      }));
-    },
-    [],
-  );
-
-  const updateProductPrice = useCallback(
-    (productId: string, price: number) => {
-      if (!Number.isFinite(price) || price < 0) return;
-
-      setData((current) => ({
-        ...current,
-        priceOverrides: { ...current.priceOverrides, [productId]: price },
-      }));
-    },
-    [],
-  );
-
-  const updateVariantStock = useCallback(
-    (productId: string, color: string, size: string, stock: number) => {
-      if (!Number.isFinite(stock) || stock < 0) return;
-
-      setData((current) => ({
-        ...current,
-        stockOverrides: {
-          ...current.stockOverrides,
-          [productId]: {
-            ...current.stockOverrides[productId],
-            [color]: {
-              ...current.stockOverrides[productId]?.[color],
-              [size]: Math.floor(stock),
-            },
-          },
-        },
-      }));
-    },
-    [],
-  );
-
-  const setProductActive = useCallback((productId: string, active: boolean) => {
-    setData((current) => ({
-      ...current,
-      inactiveProducts: active
-        ? current.inactiveProducts.filter((id) => id !== productId)
-        : current.inactiveProducts.includes(productId)
-          ? current.inactiveProducts
-          : [...current.inactiveProducts, productId],
-    }));
-  }, []);
-
-  const resetStore = useCallback(() => setData(INITIAL_DATA), []);
-
-  const value = useMemo(
-    () => ({
-      products: productsWithOverrides,
-      orders: data.orders,
-      getProduct,
-      isProductActive,
-      createOrder,
-      updateOrderStatus,
-      updatePaymentStatus,
-      updateProductPrice,
-      updateVariantStock,
-      setProductActive,
-      resetStore,
-    }),
-    [
-      productsWithOverrides,
-      data.orders,
-      getProduct,
-      isProductActive,
-      createOrder,
-      updateOrderStatus,
-      updatePaymentStatus,
-      updateProductPrice,
-      updateVariantStock,
-      setProductActive,
-      resetStore,
-    ],
-  );
+  const getProduct = useCallback((id: string) => products.find((product) => product.id === id), [products]);
+  const isProductActive = useCallback((id: string) => activeIds.includes(id), [activeIds]);
+  const value = useMemo(() => ({ products, catalogReady, catalogError, orders: [], getProduct, isProductActive, createOrder, refresh }),
+    [products, catalogReady, catalogError, getProduct, isProductActive, createOrder, refresh]);
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
 }
 
 export function useStore() {
-  const context = useContext(StoreContext);
-
-  if (!context) throw new Error("useStore debe usarse dentro de StoreProvider");
-
-  return context;
+  const store = useContext(StoreContext);
+  if (!store) throw new Error("useStore debe usarse dentro de StoreProvider");
+  return store;
 }

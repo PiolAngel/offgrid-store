@@ -1,12 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { products, categories } from "@/data/products";
+import { categories } from "@/data/products";
+import type { Product } from "@/types";
 import type { CategoryId } from "@/types";
 
 export type PriceRange = "all" | "under-300" | "300-500" | "over-500";
 
-export function useProductFilter() {
+export function useProductFilter(products: Product[]) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<"all" | CategoryId>("all");
   const [priceRange, setPriceRange] = useState<PriceRange>("all");
@@ -45,7 +46,7 @@ export function useProductFilter() {
 
       return matchesQuery && matchesCategory && matchesPrice;
     });
-  }, [query, category, priceRange]);
+  }, [products, query, category, priceRange]);
 
   const resetFilters = () => {
     setQuery("");

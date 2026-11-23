@@ -8,6 +8,7 @@ import { CATEGORY_SELECT_EVENT } from "@/lib/category-events";
 import { useStore } from "@/context/StoreContext";
 
 export default function Catalog() {
+  const { products, isProductActive, catalogReady, catalogError, refresh } = useStore();
   const {
     query,
     setQuery,
@@ -18,8 +19,7 @@ export default function Catalog() {
     categories,
     filteredProducts: allFilteredProducts,
     resetFilters,
-  } = useProductFilter();
-const { isProductActive } = useStore();
+  } = useProductFilter(products);
 
 const filteredProducts = allFilteredProducts.filter((product) =>
   isProductActive(product.id),
@@ -123,7 +123,15 @@ const filteredProducts = allFilteredProducts.filter((product) =>
           </div>
         )}
 
-        {filteredProducts.length > 0 ? (
+        {catalogError && (
+          <div role="alert" className="mb-6 border border-[#d9d2c7] bg-[#eee9df] px-5 py-4 text-sm">
+            No pudimos actualizar el inventario en este momento. Para evitar pedidos incorrectos, las compras están pausadas.
+            <button type="button" className="ml-3 underline underline-offset-4" onClick={() => void refresh()}>Reintentar</button>
+          </div>
+        )}
+        {!catalogReady && !catalogError ? (
+          <p aria-live="polite" className="py-12 text-center text-sm text-[#77716a]">Cargando disponibilidad...</p>
+        ) : !catalogReady ? null : filteredProducts.length > 0 ? (
           <div className="grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-5 sm:gap-y-10 lg:grid-cols-4 lg:gap-x-6">
             {filteredProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
