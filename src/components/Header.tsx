@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type MouseEvent } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCart } from "@/context/CartContext";
@@ -106,6 +106,26 @@ export default function Header() {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [menuOpen]);
 
+  // Un enlace con el mismo hash también debe funcionar después de desplazarse.
+  // Esperamos al siguiente frame para que el menú móvil colapse antes de mover el scroll.
+  function navigateToSection(event: MouseEvent<HTMLAnchorElement>, href: string) {
+    setMenuOpen(false);
+    if (pathname !== "/") return;
+    const id = href.slice(2);
+    const target = document.getElementById(id);
+    if (!target) return;
+    event.preventDefault();
+    if (window.location.hash !== `#${id}`) {
+      window.history.pushState(null, "", href);
+    }
+    window.requestAnimationFrame(() => {
+      target.scrollIntoView({
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+        block: "start",
+      });
+    });
+  }
+
   const cartLabel =
     totalItems === 0
       ? "Abrir carrito, vacío"
@@ -121,7 +141,7 @@ export default function Header() {
           <Link
             href="/#inicio"
             aria-label="OFFGRID, ir al inicio"
-            className="text-[17px] font-semibold tracking-[0.34em] text-ink"
+            className="inline-flex min-h-11 items-center text-[17px] font-semibold tracking-[0.34em] text-ink"
           >
             OFFGRID
           </Link>
@@ -129,12 +149,13 @@ export default function Header() {
 
         {/* Navegación de escritorio */}
         <nav aria-label="Principal" className="hidden lg:block">
-          <ul className="flex items-center gap-9">
+          <ul className="flex items-center gap-1 xl:gap-3">
             {NAV_LINKS.map((link) => (
               <li key={link.href}>
                 <Link
                   href={link.href}
-                  className="relative text-[12px] font-medium uppercase tracking-[0.16em] text-ink after:absolute after:-bottom-1 after:left-0 after:h-px after:w-full after:origin-left after:scale-x-0 after:bg-ink after:transition-transform after:duration-300 hover:after:scale-x-100 focus-visible:after:scale-x-100"
+                  onClick={(event) => navigateToSection(event, link.href)}
+                  className="relative inline-flex min-h-11 items-center px-3 text-[12px] font-medium uppercase tracking-[0.16em] text-ink after:pointer-events-none after:absolute after:bottom-1 after:left-3 after:right-3 after:h-px after:origin-left after:scale-x-0 after:bg-ink after:transition-transform after:duration-300 hover:after:scale-x-100 focus-visible:after:scale-x-100"
                 >
                   {link.label}
                 </Link>
@@ -145,7 +166,7 @@ export default function Header() {
 
         {/* Acciones */}
         <div className="flex flex-1 items-center justify-end gap-1">
-          <Link href="/#catalogo" aria-label="Buscar productos" className={iconButtonClasses}>
+          <Link href="/#catalogo" onClick={(event) => navigateToSection(event, "/#catalogo")} aria-label="Buscar productos" className={iconButtonClasses}>
             <SearchIcon />
           </Link>
 
@@ -192,8 +213,8 @@ export default function Header() {
             <li key={link.href} className="border-b border-ink/10 last:border-b-0">
               <Link
                 href={link.href}
-                onClick={() => setMenuOpen(false)}
-                className="flex items-center justify-between py-4 font-serif text-3xl text-ink"
+                onClick={(event) => navigateToSection(event, link.href)}
+                className="flex min-h-14 items-center justify-between py-4 font-serif text-3xl text-ink"
               >
                 {link.label}
                 <span aria-hidden="true" className="text-base text-warm">
