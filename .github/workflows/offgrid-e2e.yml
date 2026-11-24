@@ -31,9 +31,11 @@ jobs:
       - name: Preparar navegador Chromium
         run: |
           npm install --no-save --package-lock=false --ignore-scripts playwright@1.56.1
-          npx playwright install --with-deps chromium
+          npx playwright install --with-deps chromium webkit
       - name: Probar desktop y móvil
-        run: node tests/e2e-demo.mjs
+        run: |
+          node tests/e2e-demo.mjs
+          node tests/navigation-regression.mjs
       - name: Adjuntar capturas
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
