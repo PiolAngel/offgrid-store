@@ -71,6 +71,30 @@ body {
   outline-offset: 3px;
 }
 
+
+/* Microinteracciones: solo dispositivos con hover y usuarios sin reducción de movimiento.
+   Sin ocultar contenido ni animar el desplazamiento de página. */
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  #categorias a,
+  #destacados article,
+  #catalogo article,
+  .offgrid-social-tile {
+    transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease, background-color 220ms ease;
+  }
+
+  #categorias a:hover,
+  #destacados article:hover,
+  #catalogo article:hover,
+  .offgrid-social-tile[href]:hover {
+    transform: translateY(-3px);
+  }
+
+  #destacados article:hover,
+  #catalogo article:hover {
+    filter: drop-shadow(0 8px 10px rgba(34, 34, 31, 0.09));
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;

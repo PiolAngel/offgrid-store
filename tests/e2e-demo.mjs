@@ -95,6 +95,13 @@ async function run() {
       });
 
       await page.goto(URL,{waitUntil:"domcontentloaded"});
+      // Presencia de redes de demostración sin inventar perfiles oficiales.
+      const redes = page.getByRole("region", {name:"El estilo sigue fuera de la pantalla."});
+      await redes.waitFor();
+      assert.equal(await redes.getByText("Perfil próximamente").count(), 2);
+      assert.equal(await redes.locator('a[href*="instagram.com"], a[href*="tiktok.com"]').count(), 0);
+      await page.screenshot({path:`test-artifacts/${label}-social-section.png`,fullPage:true});
+      console.log(`E2E ${label}: sección social visible y sin cuentas inventadas`);
       console.log(`Catálogo cargando (${label})`);
       await page.getByRole("note").getByText("OFFGRID · DEMO").waitFor();
       await page.getByRole("button",{name:/Ver detalles de White Sneakers/i}).first().click();
