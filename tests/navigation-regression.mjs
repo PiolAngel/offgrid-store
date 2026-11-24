@@ -57,7 +57,7 @@ async function test(browser,label,viewport,mobile){
  }
  await page.getByRole("button",{name:/Abrir carrito/}).click();
  await page.getByRole("dialog",{name:"Tu carrito"}).waitFor();
- await page.getByRole("button",{name:"Cerrar carrito"}).first().click();
+ await page.getByRole("dialog",{name:"Tu carrito"}).getByRole("button",{name:"Cerrar carrito"}).click();
  await page.screenshot({path:"test-artifacts/nav-"+label+"-final.png"});
  assert.deepEqual(errors,[],label+" errores de consola");
  console.log("NAV_"+label+"_PASS");
