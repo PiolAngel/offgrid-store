@@ -6,6 +6,7 @@ import FeaturedProducts from "@/components/FeaturedProducts";
 import Catalog from "@/components/Catalog";
 import EditorialBanner from "@/components/EditorialBanner";
 import BrandStory from "@/components/BrandStory";
+import SocialSection from "@/components/SocialSection";
 import CartDrawer from "@/components/CartDrawer";
 
 export default function Home() {
@@ -19,6 +20,7 @@ export default function Home() {
         <Catalog />
         <EditorialBanner />
         <BrandStory />
+        <SocialSection />
       </main>
       <CartDrawer />
     </>
