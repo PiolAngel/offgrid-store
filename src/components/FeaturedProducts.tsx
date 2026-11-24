@@ -14,8 +14,6 @@ export default function FeaturedProducts() {
     .filter((product) => product.featured && isProductActive(product.id))
     .slice(0, MAX_FEATURED);
 
-  if (!catalogReady || featured.length === 0) return null;
-
   return (
     <section
       id="destacados"
@@ -44,11 +42,17 @@ export default function FeaturedProducts() {
           </a>
         </div>
 
-        <div className="mt-10 grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-5 sm:gap-y-10 lg:grid-cols-4 lg:gap-x-6">
-          {featured.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
+        {featured.length > 0 ? (
+          <div className="mt-10 grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-5 sm:gap-y-10 lg:grid-cols-4 lg:gap-x-6">
+            {featured.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        ) : (
+          <p className="mt-10 text-sm text-muted" aria-live="polite">
+            {catalogReady ? "No hay destacados disponibles en este momento." : "Cargando destacados de demostración..."}
+          </p>
+        )}
       </div>
     </section>
   );
