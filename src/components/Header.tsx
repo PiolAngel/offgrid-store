@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCart } from "@/context/CartContext";
 import FreeShippingBar from "@/components/FreeShippingBar";
@@ -88,6 +87,9 @@ function CloseIcon() {
 export default function Header() {
   const { totalItems, openCart } = useCart();
   const pathname = usePathname();
+  // Enlaces de fragmento de la misma página: no pasar por el enrutador
+  // de Next.js. Repetir un fragmento activo debe volver a desplazar.
+  const anchorHref = (absolute: string) => pathname === "/" ? absolute.slice(1) : absolute;
   const [menuOpen, setMenuOpen] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -118,13 +120,13 @@ export default function Header() {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 sm:px-8">
         {/* Logo */}
         <div className="flex flex-1 items-center">
-          <Link
-            href="/#inicio"
+          <a
+            href={anchorHref("/#inicio")}
             aria-label="OFFGRID, ir al inicio"
             className="text-[17px] font-semibold tracking-[0.34em] text-ink"
           >
             OFFGRID
-          </Link>
+          </a>
         </div>
 
         {/* Navegación de escritorio */}
@@ -132,12 +134,12 @@ export default function Header() {
           <ul className="flex items-center gap-9">
             {NAV_LINKS.map((link) => (
               <li key={link.href}>
-                <Link
-                  href={link.href}
+                <a
+                  href={anchorHref(link.href)}
                   className="relative text-[12px] font-medium uppercase tracking-[0.16em] text-ink after:absolute after:-bottom-1 after:left-0 after:h-px after:w-full after:origin-left after:scale-x-0 after:bg-ink after:transition-transform after:duration-300 hover:after:scale-x-100 focus-visible:after:scale-x-100"
                 >
                   {link.label}
-                </Link>
+                </a>
               </li>
             ))}
           </ul>
@@ -145,9 +147,9 @@ export default function Header() {
 
         {/* Acciones */}
         <div className="flex flex-1 items-center justify-end gap-1">
-          <Link href="/#catalogo" aria-label="Buscar productos" className={iconButtonClasses}>
+          <a href={anchorHref("/#catalogo")} aria-label="Buscar productos" className={iconButtonClasses}>
             <SearchIcon />
-          </Link>
+          </a>
 
           <button
             type="button"
@@ -190,8 +192,8 @@ export default function Header() {
         <ul className="mx-auto max-w-7xl px-5 pb-4 pt-2 sm:px-8">
           {NAV_LINKS.map((link) => (
             <li key={link.href} className="border-b border-ink/10 last:border-b-0">
-              <Link
-                href={link.href}
+              <a
+                href={anchorHref(link.href)}
                 onClick={() => setMenuOpen(false)}
                 className="flex items-center justify-between py-4 font-serif text-3xl text-ink"
               >
@@ -199,7 +201,7 @@ export default function Header() {
                 <span aria-hidden="true" className="text-base text-warm">
                   →
                 </span>
-              </Link>
+              </a>
             </li>
           ))}
         </ul>

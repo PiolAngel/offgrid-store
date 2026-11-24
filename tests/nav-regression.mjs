@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import {spawn} from "node:child_process";
 import {mkdir} from "node:fs/promises";
-import {chromium} from "playwright";
+import {chromium,webkit} from "playwright";
 
 const URL="http://127.0.0.1:3100";
 const ids=["categorias","destacados","catalogo","coleccion","nosotros"];
@@ -50,20 +50,30 @@ async function run(){
   await waitServer();
   await mkdir("test-artifacts",{recursive:true});
   const browser=await chromium.launch({headless:true});
+  const safari=await webkit.launch({headless:true});
   try{
     for(const [mode,viewport] of Object.entries({
-      desktop:{width:1440,height:900},tablet:{width:820,height:1100},iphone:{width:390,height:844}
+      desktop:{width:1440,height:900},tablet:{width:820,height:1100},
+      iphone:{width:390,height:844},"iphone-webkit":{width:390,height:844}
     })){
-      const page=await browser.newPage({viewport,isMobile:mode==="iphone",hasTouch:mode==="iphone"});
+      const isPhone=mode.startsWith("iphone");
+      const activeBrowser=mode==="iphone-webkit"?safari:browser;
+      const page=await activeBrowser.newPage({viewport,isMobile:isPhone,hasTouch:isPhone});
       page.setDefaultTimeout(14000);
       const errors=[];
       page.on("pageerror",e=>errors.push(e.message));
-      await page.route("**/api/catalog",async route=>route.fulfill({
-        status:200,contentType:"application/json",headers:{"cache-control":"no-store"},
-        body:JSON.stringify({configured:true,products:[product]})
-      }));
+      await page.route("**/api/catalog",async route=>{
+        // Destacados debe existir incluso antes de que llegue el catálogo.
+        if(mode==="desktop") await new Promise(resolve=>setTimeout(resolve,1200));
+        return route.fulfill({
+          status:200,contentType:"application/json",headers:{"cache-control":"no-store"},
+          body:JSON.stringify({configured:true,products:[product]})
+        });
+      });
       await page.goto(URL,{waitUntil:"domcontentloaded"});
-      await page.waitForFunction(()=>!!document.getElementById("destacados"));
+      const anchorBeforeCatalog=await page.evaluate(()=>!!document.getElementById("destacados"));
+      assert(anchorBeforeCatalog,`Falta #destacados antes de cargar el catálogo (${mode})`);
+      await page.waitForFunction(()=>!!document.querySelector('#destacados article'));
       await page.screenshot({path:`test-artifacts/nav-${mode}-initial.png`,fullPage:false});
       if(mode==="desktop"){
         for(const from of ["bottom","middle","top","same-hash"]){
@@ -111,11 +121,19 @@ async function run(){
       assert.equal(errors.length,0,`Errores JS ${mode}: ${errors.join(" | ")}`);
       const width=await page.evaluate(()=>({scroll:document.documentElement.scrollWidth,client:document.documentElement.clientWidth}));
       assert(width.scroll<=width.client+2,`Desbordamiento ${mode}: ${JSON.stringify(width)}`);
+      // El header no debe cubrir ni inutilizar el botón de producto ni el carrito.
+      await page.getByRole("button",{name:/Ver detalles de White Sneakers/i}).first().click();
+      await page.getByRole("dialog",{name:"Detalles de White Sneakers"}).waitFor();
+      await page.getByRole("button",{name:"Cerrar producto"}).click();
+      await page.getByRole("button",{name:/Abrir carrito/i}).click();
+      await page.getByRole("dialog",{name:"Tu carrito"}).waitFor();
+      await page.getByRole("button",{name:"Cerrar carrito"}).click();
+
       await page.screenshot({path:`test-artifacts/nav-${mode}-final.png`,fullPage:false});
       await page.close();
       console.log(`NAV_PASS ${mode}`);
     }
-  }finally{await browser.close()}
+  }finally{await browser.close();await safari.close()}
 }
 try{await run()}catch(e){console.error(e);process.exitCode=1}finally{
  try{process.kill(-child.pid,"SIGTERM")}catch{child.kill("SIGTERM")}
