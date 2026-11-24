@@ -50,18 +50,19 @@ async function run(){
   await waitServer();
   await mkdir("test-artifacts",{recursive:true});
   const browser=await chromium.launch({headless:true});
-  const safari=await webkit.launch({headless:true});
+  const safari=process.env.OFFGRID_TEST_WEBKIT==="1" ? await webkit.launch({headless:true}) : null;
   try{
     for(const [mode,viewport] of Object.entries({
       desktop:{width:1440,height:900},tablet:{width:820,height:1100},
       iphone:{width:390,height:844},"iphone-webkit":{width:390,height:844}
-    })){
+    }).filter(([mode])=>mode!=="iphone-webkit"||safari)){
       const isPhone=mode.startsWith("iphone");
       const activeBrowser=mode==="iphone-webkit"?safari:browser;
       const page=await activeBrowser.newPage({viewport,isMobile:isPhone,hasTouch:isPhone});
       page.setDefaultTimeout(14000);
       const errors=[];
       page.on("pageerror",e=>errors.push(e.message));
+      page.on("console",message=>{if(message.type()==="error") errors.push(message.text())});
       await page.route("**/api/catalog",async route=>{
         // Destacados debe existir incluso antes de que llegue el catálogo.
         if(mode==="desktop") await new Promise(resolve=>setTimeout(resolve,1200));
@@ -90,6 +91,7 @@ async function run(){
               await page.waitForTimeout(70);
               await link.click();
               await verify(page,id,mode,"repeated-same-fragment");
+              if(id==="categorias") await page.screenshot({path:`test-artifacts/nav-${mode}-repeat-categorias.png`,fullPage:false});
             }
           }
         }
@@ -133,7 +135,7 @@ async function run(){
       await page.close();
       console.log(`NAV_PASS ${mode}`);
     }
-  }finally{await browser.close();await safari.close()}
+  }finally{await browser.close();await safari?.close()}
 }
 try{await run()}catch(e){console.error(e);process.exitCode=1}finally{
  try{process.kill(-child.pid,"SIGTERM")}catch{child.kill("SIGTERM")}
