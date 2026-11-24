@@ -18,13 +18,14 @@ async function test(browser,label,viewport,mobile){
  await page.route("**/api/catalog",r=>r.fulfill({status:200,contentType:"application/json",body:JSON.stringify({configured:true,products:[sample]})}));
  await page.goto(base,{waitUntil:"domcontentloaded"});
  await page.locator("#catalogo").waitFor();
+ await page.waitForTimeout(500);
  const menu=mobile||viewport.width<1024;
  const nav=page.getByRole("navigation",{name:menu?"Navegación móvil":"Principal"});
  await page.screenshot({path:"test-artifacts/nav-"+label+"-inicio.png"});
- for(let round=0;round<2;round++){
+ for(let round=0;round<3;round++){
   for(const pair of destinations){
    const name=pair[0],id=pair[1];
-   await page.evaluate(()=>window.scrollTo({top:document.body.scrollHeight,behavior:"instant"}));
+   await page.evaluate(round=>window.scrollTo({top:round===0?0:round===1?document.body.scrollHeight/2:document.body.scrollHeight,behavior:"instant"}),round);
    await sleep(80);
    if(menu){await page.getByRole("button",{name:"Abrir menú"}).click()}
    const link=nav.getByRole("link",{name});
@@ -42,6 +43,7 @@ async function test(browser,label,viewport,mobile){
  if(menu){
   await page.evaluate(()=>window.scrollTo({top:0,behavior:"instant"}));
   await page.getByRole("button",{name:"Abrir menú"}).click();
+  await page.waitForTimeout(500);
   await page.screenshot({path:"test-artifacts/nav-"+label+"-menu.png"});
   await page.getByRole("button",{name:"Cerrar menú"}).click();
   await page.getByRole("button",{name:"Abrir menú"}).click();
@@ -66,7 +68,25 @@ async function test(browser,label,viewport,mobile){
 try{
  await ready();await mkdir("test-artifacts",{recursive:true});
  const chrome=await chromium.launch();
- try{await test(chrome,"desktop",{width:1440,height:900},false);await test(chrome,"tablet",{width:820,height:1000},false)}finally{await chrome.close()}
+ try{
+  await test(chrome,"desktop",{width:1440,height:900},false);
+  await test(chrome,"tablet",{width:820,height:1000},false);
+  // Clic en Destacados antes de que Supabase haya enviado los productos.
+  const early=await chrome.newPage({viewport:{width:1440,height:900},reducedMotion:"reduce"});
+  await early.route("**/api/catalog",async route=>{
+   await sleep(1000);
+   await route.fulfill({status:200,contentType:"application/json",body:JSON.stringify({configured:true,products:[sample]})});
+  });
+  await early.goto(base,{waitUntil:"domcontentloaded"});
+  await early.getByRole("navigation",{name:"Principal"}).getByRole("link",{name:"Destacados"}).click();
+  await early.locator("#destacados h2").waitFor();
+  await early.waitForTimeout(550);
+  const location=await early.evaluate(()=>({top:document.getElementById("destacados").getBoundingClientRect().top,head:document.querySelector("header").getBoundingClientRect().bottom}));
+  assert(location.top>=location.head-30&&location.top<=location.head+170,"Destacados no navega antes de cargar catálogo "+JSON.stringify(location));
+  await early.screenshot({path:"test-artifacts/nav-desktop-destacados-carga-tardia.png"});
+  await early.close();
+  console.log("NAV_DESTACADOS_ASYNC_PASS");
+ }finally{await chrome.close()}
  const safari=await webkit.launch();
  try{await test(safari,"iphone-webkit",{width:390,height:844},true)}finally{await safari.close()}
 }catch(error){console.error(error);process.exitCode=1}
