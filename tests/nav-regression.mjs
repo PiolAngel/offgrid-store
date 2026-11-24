@@ -75,6 +75,12 @@ async function run(){
             const link=page.getByRole("navigation",{name:"Principal"}).getByRole("link",{name,exact:true});
             await link.click();
             await verify(page,id,mode,from);
+            if(from==="same-hash"){
+              await page.evaluate(()=>window.scrollTo({top:999999,behavior:"instant"}));
+              await page.waitForTimeout(70);
+              await link.click();
+              await verify(page,id,mode,"repeated-same-fragment");
+            }
           }
         }
       }else{
@@ -88,6 +94,13 @@ async function run(){
             await nav.getByRole("link",{name,exact:true}).click();
             await nav.waitFor({state:"hidden"});
             await verify(page,id,mode,from);
+            if(from==="same-hash"){
+              await page.evaluate(()=>window.scrollTo({top:999999,behavior:"instant"}));
+              await page.getByRole("button",{name:"Abrir menú"}).click();
+              await nav.getByRole("link",{name,exact:true}).click();
+              await nav.waitFor({state:"hidden"});
+              await verify(page,id,mode,"repeated-same-fragment");
+            }
           }
         }
         await page.getByRole("button",{name:"Abrir menú"}).click();
