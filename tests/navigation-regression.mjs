@@ -65,6 +65,44 @@ async function test(browser,label,viewport,mobile){
  console.log("NAV_"+label+"_PASS");
  await context.close();
 }
+
+async function testSmoothMotion(browser,label,viewport,mobile){
+ const context=await browser.newContext({viewport,isMobile:mobile,hasTouch:mobile,reducedMotion:"no-preference"});
+ const page=await context.newPage();
+ page.setDefaultTimeout(12000);
+ const errors=[];
+ page.on("pageerror",error=>errors.push(error.message));
+ await page.route("**/api/catalog",route=>route.fulfill({
+  status:200,contentType:"application/json",
+  body:JSON.stringify({configured:true,products:[sample]})
+ }));
+ await page.goto(base,{waitUntil:"domcontentloaded"});
+ await page.locator("#catalogo").waitFor();
+ await page.waitForTimeout(400);
+ const nav=page.getByRole("navigation",{name:mobile?"Navegación móvil":"Principal"});
+ for(const [name,id] of [["Categorías","categorias"],["Catálogo","catalogo"]]){
+  for(let repeat=0;repeat<2;repeat++){
+   await page.evaluate(()=>window.scrollTo({top:document.documentElement.scrollHeight,behavior:"instant"}));
+   await sleep(150);
+   if(mobile) await page.getByRole("button",{name:"Abrir menú"}).click();
+   await nav.getByRole("link",{name,exact:true}).click();
+   await page.waitForFunction(targetId=>{
+    const target=document.getElementById(targetId);
+    const header=document.querySelector("header");
+    if(!target||!header)return false;
+    const top=target.getBoundingClientRect().top;
+    const bottom=header.getBoundingClientRect().bottom;
+    return location.hash==="#"+targetId && top>=bottom-30 && top<=bottom+170;
+   },id,{timeout:7000});
+   if(mobile) await page.getByRole("button",{name:"Abrir menú"}).waitFor();
+   console.log("NAV_SMOOTH "+label+" "+name+" "+(repeat?"repetido":"inicial")+" PASS");
+  }
+ }
+ assert.deepEqual(errors,[],label+" errores JS en desplazamiento animado");
+ await page.screenshot({path:"test-artifacts/nav-"+label+"-smooth.png"});
+ await context.close();
+}
+
 try{
  await ready();await mkdir("test-artifacts",{recursive:true});
  const chrome=await chromium.launch();
@@ -86,8 +124,9 @@ try{
   await early.screenshot({path:"test-artifacts/nav-desktop-destacados-carga-tardia.png"});
   await early.close();
   console.log("NAV_DESTACADOS_ASYNC_PASS");
+  await testSmoothMotion(chrome,"desktop",{width:1440,height:900},false);
  }finally{await chrome.close()}
  const safari=await webkit.launch();
- try{await test(safari,"iphone-webkit",{width:390,height:844},true)}finally{await safari.close()}
+ try{await test(safari,"iphone-webkit",{width:390,height:844},true);await testSmoothMotion(safari,"iphone-webkit",{width:390,height:844},true)}finally{await safari.close()}
 }catch(error){console.error(error);process.exitCode=1}
 finally{try{process.kill(-server.pid,"SIGTERM")}catch{server.kill("SIGTERM")}server.stdout.destroy();server.stderr.destroy();process.exit(process.exitCode??0)}
