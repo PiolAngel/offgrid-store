@@ -127,7 +127,7 @@ async function run(){
       await page.getByRole("button",{name:"Cerrar producto"}).click();
       await page.getByRole("button",{name:/Abrir carrito/i}).click();
       await page.getByRole("dialog",{name:"Tu carrito"}).waitFor();
-      await page.getByRole("button",{name:"Cerrar carrito"}).click();
+      await page.getByRole("dialog",{name:"Tu carrito"}).getByRole("button",{name:"Cerrar carrito"}).click();
 
       await page.screenshot({path:`test-artifacts/nav-${mode}-final.png`,fullPage:false});
       await page.close();
