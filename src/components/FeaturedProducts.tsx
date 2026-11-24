@@ -14,7 +14,11 @@ export default function FeaturedProducts() {
     .filter((product) => product.featured && isProductActive(product.id))
     .slice(0, MAX_FEATURED);
 
-  if (!catalogReady || featured.length === 0) return null;
+  // El destino #destacados debe existir incluso antes de recibir Supabase.
+  // De lo contrario, un clic temprano no encuentra su ancla.
+  if (!catalogReady || featured.length === 0) {
+    return <section id="destacados" aria-label="Productos destacados" />;
+  }
 
   return (
     <section
